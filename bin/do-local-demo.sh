@@ -26,7 +26,7 @@ then
     esac
 fi
 
-for d in lib vnet-vendor var-cache-yum
+for d in lib vnet-vendor var-cache-yum sbuml-resources
 do
     [ -d "$d" ] || ln -s "$R/$d" "$d"
 done
