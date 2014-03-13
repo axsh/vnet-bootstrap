@@ -1043,7 +1043,7 @@ do
   sleep 0.5
 done  >/tmp/sshfs.log 2>&1
 
-sudo sshfs -o allow_other -o directport=$sftpHPORT 10.0.2.2:.. onhost >sshfs.stdout 2>sshfs.stderr </dev/null &
+sudo sshfs -o follow_symlinks -o allow_other -o directport=$sftpHPORT 10.0.2.2:.. onhost >sshfs.stdout 2>sshfs.stderr </dev/null &
 echo "Did sshfs." >/tmp/sshfs.log
 EOF
 ) | send-script /dev/fd/0
