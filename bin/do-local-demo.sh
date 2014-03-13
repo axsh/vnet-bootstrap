@@ -7,7 +7,7 @@ reportfail()
 }
 
 export SCRIPT_DIR="$(cd "$(dirname "$(readlink -f "$0")")" && pwd -P)" || reportfail  # use -P to get expanded absolute path
-source "$SCRIPT_DIR/share-code.source"
+source "$SCRIPT_DIR/lib/share-code.source"
 
 if [ -d vm1 ]
 then
