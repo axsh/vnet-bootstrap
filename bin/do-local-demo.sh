@@ -6,8 +6,14 @@ reportfail()
     exit 255
 }
 
-[ -d vnet-install-script ] || reportfail "expect to be run from parent dir of .../vnet-install-script/"
-[ -d lib/c-dinkvm ] || reportfail "expect to be run from grandparent dir of .../c-dinkvm/"
+export PWD="$(pwd)"
+export SCRIPT_DIR="$(cd "$(dirname "$(readlink -f "$0")")" && pwd -P)" || reportfail  # use -P to get expanded absolute path
+export R="$SCRIPT_DIR/.."
+export DINKVM="$R/lib/c-dinkvm/dinkvm"
+
+[ -d "$R/lib/vnet-install-script" ] && \
+    [ -d "$R/lib/c-dinkvm" ] || reportfail "Directory layout is not correct"
+
 
 if [ -d vm1 ]
 then
@@ -15,10 +21,10 @@ then
     read ans
     case "$ans" in
 	y* | Y*)
-	    ./lib/c-dinkvm/dinkvm -rm vm1
+	    "$DINKVM" -rm vm1
 	;;
     esac
 fi
 
-time ./lib/c-dinkvm/dinkvm vm1 -mem 2000 -show ... sudo bash onhost/vnet-install-script/test-vnet-in-dinkvm.sh do -- git 1 "$@"
+time "$DINKVM" vm1 -mem 2000 -show ... sudo bash onhost/vnet-install-script/test-vnet-in-dinkvm.sh do -- git 1 "$@"
 
