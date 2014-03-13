@@ -1,0 +1,1324 @@
+#!/bin/bash
+
+usage()
+{
+    cat <<EOF
+  dinkvm: "Do In KVM", or "Do In Knoppix VM", or "dink {around} vm"
+
+  The purpose of this dinkvm script is to provide a lightweight
+  command line interface for creating reproducible virtual
+  environments with enough functionality and connectivity to be more
+  than ready for casual experimentation, fast testing, and reliable
+  demonstrations.  To make the interface simple, many options take on
+  defaults.  The usage summary below assumes many defaults, only some
+  of which are described.  For a full description of other possible
+  options, do "dinkvm --help options".
+
+    USAGE with Defaults:
+    
+    $ dinkvm -ls {-rm}
+    
+       # List all running VM started by dinkvm.  If -rm is appended,
+       # all the VMs are terminated and their vmdirs removed.
+
+    Long form:
+    $ dinkvm -dofresh scriptfile.sh {-vmdir dirpath} {-sndir sndirpath} {-rm}
+    Short form:
+    $ dinkvm {dirpath} {sndirpath} {/}-- "script contents or command line"
+    
+       # Runs script in a KVM virtual machine freshly booted from the
+       # most recent Knoppix Live CD configured for dinkvm.  STDIO
+       # output from the script forwarded back out to dinkvm's STDOUT,
+       # with STDERR output prefixed with "ERR:".  If vmdir is not
+       # specified, the VM is automatically terminated after script
+       # exits.  If vmdir already exists, command exits on error, so
+       # that -dofresh will by default only use freshly booted
+       # machines, but still be non-destructive, unless -rm is
+       # specified, which requests proactively terminating any
+       # preexisting VM at vmdir. If scriptfile.sh is "-", the script
+       # is read from STDIN. Otherwise, STDIN is ignored. if -sndir is
+       # specified, the VM is started by restoring from
+       # snapshot/checkpoint state instead of booting.
+
+    Long form:
+    $ dinkvm -domore scriptfile.sh -vmdir dirpath {-sndir sndirpath} {-rm}
+    Short form:
+    $ dinkvm dirpath {sndirpath} {/}++ "script contents or command line"
+
+       # Same as above, but if machine is already booted, use it and
+       # instead of reporting error.  This is useful for debugging and
+       # experimenting, by avoiding reboot time while trying out
+       # a script in pieces, or using a temporary VM interactively.
+    
+    $ dinkvm -rmvm vmdir
+    
+       # Terminate the VM associated with vmdir.
+    
+    $ dinkvm -rm vmdir
+    
+       # Terminate the VM associated with vmdir and remove vmdir.
+
+    $ dinkvm -save -vmdir dirpath -sndir sndirpath
+    
+       # Create directory at sndirpath and fill it with the entire
+       # checkpoint state of the VM.
+
+    $ dinkvm -net {nn} dirpath1 {dirpath2 ...}
+    
+       # Setup the second network device in each VM to be active with a
+       # unique IP address, starting with 192.168.1.nn.  nn is assumed
+       # to be 1 if not specified.
+
+  By default, two directories are automatically mounted via sshfs:
+     /home/knoppix/vmdir accesses the vmdir on the host.
+     /home/knoppix/onhost accesses the parent directory of vmdir.
+
+  By default, two net devices are created in the VM. The first is a
+  user mode slirp interface that can access the outside network via
+  NAT with IP address 10.0.2.15, following Qemu/KVM conventions.  The
+  second is an interface to a local network using KVM's multicast
+  VLAN.  By default this interface is not setup.
+
+EOF
+}
+
+usage-options()
+{
+    cat <<EOF
+
+  Starting simple, the -ls command only takes one option, the addition
+  of -rm.  The -rmvm, -rm, and -net commands all take a list of
+  vmdirs, and no other options.  
+
+  The -save command takes two directories as options.  One must look
+  like a vmdir, and the other (the sndir) must not yet exist.  They
+  can appear in any order.
+
+  For the above five commands, the command itself must appear as the
+  first parameter.
+
+  The other two commands, -dofresh and -domore, have many options.  To
+  simplify use, the ordering of the commands and the options is not
+  strict and each option can be specified either explicitly or
+  implicitly.  For example, "-sndir /tmp/mysnapshot" would set the
+  snapshot directory explicitly.  To set it implicitly,
+  /tmp/mysnapshot can appear almost anywhere on the command line
+  without -sndir and still work, because dinkvm can test that it is a
+  snapshot directory and select the correct option to set.
+
+  Therefore, concise commands like this become possible:
+  $ dinkvm /tmp/mysnapshot -- netstat -nltp
+
+  which in its fully specified form (just setting non-default options)
+  would look like this:
+  $ dinkvm -cmd -dofresh -script - -sndir /tmp/mysnapshot <<<"netstat -nltp"
+
+  (For the hopefully rare situations when an implicit definition might
+  be misinterpreted, an explicit specification can always be used.)
+
+  Before describing all the options, the "--", "++", and "..."
+  shortcuts need special explanation.  The "--" shortcut treats the
+  rest of the command as one script string and replaces itself and the
+  rest of the line with '-cmd -dofresh -script - <<<"script string"'.
+  The "++" and "..." shortcuts are synonymous and do the same except
+  use -domore instead of -dofresh.  Prefixing any of these with a
+  slash (e.g. /--) also adds the "-preaction -rm" option.  (If it
+  helps to memorize these, "--" is taken from git command line syntax,
+  for "++" the plus implies "more", "..." is just easier to type than
+  "++" and means continuation in the sense of "more", and "/" means
+  slash, as in first slash and burn the VM.)
+
+  So one by one, here are the 14 options for -dofresh and -domore,
+  with explanations of the default values and how they can be
+  implicitly defined.
+
+  1) -cmd (-dofresh or -domore)
+
+     This is either -dofresh or -domore.  Yes, the commands are parsed
+     just like the other options.
+
+  2) -display  (-vnc or -sdl)
+
+     These corresponding to the KVM options.  The statically compiled
+     version of KVM does not support -sdl, so -vnc is always the
+     default option. Either of these options can be given implicitly
+     without -display.
+
+  3) -vgacard  (-cirrus or -vmware)
+
+     These corresponding to the KVM options "-vga cirrus" and "-vga
+     vmware".  KVM defaults to cirrus.  Dinkvm overrides this default
+     to vmware because the limited graphic modes in cirrus interact in
+     bad ways with the limitations of vncviewer.  Either of these
+     options can be given implicitly without -vgacard.
+
+  4) -vncviewer (-show, -hide, or '')
+
+     If -show, start vncviewer if it is not already running.  If
+     -hide, kill vncviewer process if running.  '' leaves things as
+     is.
+
+  5) -screen (any screen dimension supported by the vmware driver,
+              e.g. 1024x768)
+
+     This value is placed on the linux command line of the booting VM,
+     such as screen=1024x768.  It defaults to 1024x768, and any of the
+     numbers in 1600x1200, 1024x768, 800x600, or 640x480 will
+     implicitly select one of these.  So it is not necessary to
+     remember whether it is 800x600 or 600x800.  Either will work, as
+     will just 600 or 800, if given implicitly without -screen.
+
+  6) -keyboard
+
+      more to come
+
+  7) -verbose
+
+  8) -preaction (-rm or '')
+
+  9) -script (filename, -, or '')
+
+ 10) -sndir
+
+ 11) -bootinfo
+
+ 12) -cpubits
+
+ 13) -vmdir
+
+ 14) -mem
+
+EOF
+}
+
+reportfail()
+{
+    echo "Failed ($*). Exiting." 1>&2
+    echo "(dinkvm --help is available)" 1>&2
+    exit 255
+}
+export SCRIPT_DIR="$(cd "$(dirname "$(readlink -f "$0")")" && pwd -P)" || reportfail  # use -P to get expanded absolute path
+
+abspath()
+{
+    p="$(dirname -- "$1")"
+    f="$(basename -- "$1")"
+    if absp="$(cd "$p" && pwd )"
+    then
+	echo "$absp/$f"
+    else
+	echo "$1" # keep same in case used in error message
+	return 255
+    fi
+}
+
+# Note that the order in which the parts below are listed in the array
+# makes a difference during parsing.  Also, for each part, there
+# should be code in set-default-if-unset() and paramcheck().
+cmdlineparts=( -cmd -display -vncviewer -vgacard -screen -keyboard -verbose -preaction -script -args -sndir -bootinfo -cpubits -vmdir -mem )
+
+paramcheck()
+{
+    partname="$1"
+    candidate="${2}" # returned modified for use by caller
+    [ "$candidate" = "" ] && return 255
+    case "$partname" in
+	-cmd)
+	    case "$candidate" in
+		-dofresh | -domore)
+		    return 0
+		    ;;
+		*)  return 255
+		    ;;
+	    esac
+	    ;;
+	-display)
+	    [ "$candidate" == "-vnc" ] && return 0
+	    [ "$candidate" == "-sdl" ] && return 0
+	    return 255
+	    ;;
+	-vncviewer)
+	    [ "$candidate" == "-show" ] && return 0
+	    [ "$candidate" == "-hide" ] && return 0
+	    return 255
+	    ;;
+	-vgacard)
+	    [ "$candidate" == "-cirrus" ] && return 0
+	    [ "$candidate" == "-vmware" ] && return 0
+	    return 255
+	    ;;
+	-screen)
+	    # let any of these numbers be a shortcut for setting the screen size
+	    for pat in 1024 768 640 480 800 600 1600 1200
+	    do
+		# This is maybe still too permissive.  For example, if
+		# a sndir or vmdir is named 1024something, it will be
+		# interpreted as a screen size.
+		[[ "$candidate" == $pat* ]] && return 0
+		[[ "$candidate" == -$pat* ]] && return 0
+	    done
+	    return 255
+	    ;;
+	-keyboard)
+	    [ "$candidate" == "-en" ] && return 0
+	    [ "$candidate" == "-jp" ] && return 0
+	    return 255
+	    ;;
+	-verbose)
+	    [ "$candidate" == "-v" ] && return 0
+	    [ "$candidate" == "-dry" ] && return 0
+	    return 255
+	    ;;
+	-preaction)
+	    [ "$candidate" == "-rm" ] && return 0
+	    return 255
+	    ;;
+	-script)
+	    [ "$candidate" = "-" ] && return 0
+	    [[ "$(file -ikbL -- "$candidate")" == *ascii* ]] && return 0
+	    return 255
+	    ;;
+	-args)
+	    return 255 # -args must always be explicitly put on cmdline to overide default
+	    ;;
+	-sndir)
+	    candidate="${candidate%/}"
+	    [[ "$candidate" == -* ]] && return 255 # disallow implict dir names that start with dash
+	    [ -f "$candidate/kvm.state.gz" ] || [ -f "$candidate/kvm.state" ] && return 0
+	    return 255
+	    ;;
+	-bootinfo)
+	    candidate="${candidate%/}"
+	    if [ -f "$candidate/start-scriptable-kvm.sh" ]
+	    then
+		candidate="$(abspath "$candidate")"
+		return 0
+	    fi
+	    if candidate=$(check-bootinfo-shortcut "$candidate")
+	    then
+		return 0
+	    fi
+	    return 255
+	    ;;
+	-cpubits)
+	    [[ "$candidate" == 32bit* ]] && return 0 # match 32bit or 32bits
+	    [[ "$candidate" == 64bit* ]] && return 0
+	    return 255 # -mem must always be explicitly put on cmdline to overide default
+	    ;;
+	-vmdir)
+	    candidate="${candidate%/}"
+	    [[ "$candidate" == -* ]] && return 255 # disallow implict dir names that start with dash
+	    [[ "$candidate" == */* ]] || candidate="./$candidate"
+	    [ -d "${candidate%/*}" ] || return 255  # (case 1) parent dir does not exist
+	    if [ -d "${candidate}" ]
+	    then
+		[ -f "$candidate/delete-vm-and-this-dir-shortcut.sh" ] || return 255
+		# (case 2) exists and looks OK
+	    fi
+	    return 0 # (case 3) will be a new dir
+	    ;;
+	-mem)
+	    return 255 # -mem must always be explicitly put on cmdline to overide default
+	    ;;
+	*) reportfail BUG
+	    ;;
+    esac
+}
+
+check-bootinfo-shortcut()
+{
+    # bootinfo directories sit below "$SCRIPT_DIR". They start with
+    # the string "boot" and have a dash followed the knoppix version
+    # number in the directory name.  Any parameter that starts a dash
+    # and a digit can be a shortcut for the bootinfo.  If the
+    # parameter string is $pat, a glob pattern is produced by
+    # boot*$pat*. So -7*dvd becomes boot*-7*dvd*.  If one and only one
+    # bootinfo directory matches, it is used and the shortcut
+    # succeeds.
+    
+    pat="$1"
+    bhits=( $(
+	    shopt -s extglob
+	    shopt -s nullglob
+	    glob="boot*$pat*"
+	    echo "$SCRIPT_DIR/"$glob )
+    )
+    [ "${#bhits[@]}" = "1" ] || return 255
+    echo "${bhits[0]}"
+    return 0
+}
+
+most-recent-bootinfo()
+{
+    # heuristic is to take all digits in the name and treat
+    # as one number to sort.  Choose boot dir with largest
+    # such number.
+    bhits=( $(
+	    shopt -s extglob
+	    shopt -s nullglob
+	    cd "$SCRIPT_DIR"
+	    echo boot* )
+    )
+    recent="$(
+       for b in "${bhits[@]}"
+       do
+   	  echo "${b//[^0-9]/} ,,, $b"
+       done | sort -n | tail -n 1
+    )"
+    echo "$SCRIPT_DIR/${recent#*,,, }"
+}
+
+iscmd()
+{
+    for acmd in "${cmdlineparts[@]}"
+    do
+	[ "$acmd" = "$1" ] && return 0
+    done
+    return 255
+}
+
+dumpcmds()
+{
+    for acmd in "${cmdlineparts[@]}"
+    do
+	printf "%-10s= %s\n" "$acmd" "$(eval echo \$the${acmd#-})"
+    done
+}
+
+set-explicit-parts()
+{
+    i=0
+    restmarker=""
+    while (( i<plength ))
+    do
+	if [ "${pcopy[i]}" = "--" ] || [ "${pcopy[i]}" = "++" ] || [ "${pcopy[i]}" = "..." ] \
+	    || [ "${pcopy[i]}" = "/--" ] || [ "${pcopy[i]}" = "/++" ] || [ "${pcopy[i]}" = "/..." ]
+	then
+	    restmarker="${pcopy[i]}"
+	    therest="${pcopy[@]:i+1}"
+
+	    # shortcut to redirect stdout and stderr so that things like
+	    #./dinkvm tmpvm ... 'xterm &'
+	    # will not hang.  Hopefully this will prevent more surprises than
+	    # it creates.
+	    pat='*&'
+	    if [[ "$therest" == $pat ]]
+	    then
+		echo '(redirecting stderr and stdout to /dev/null for "... &" shortcut)' 1>&2
+		therest="exec 1>/dev/null 2>/dev/null ; $therest"
+	    fi
+
+	    for (( j=i ; j<plength ; j++ ))
+	    do
+		unset pcopy[j]
+	    done
+	    break
+	fi
+
+	if iscmd "${pcopy[i]}"
+	then
+	    partname="${pcopy[i]}"
+	    varname=the"${pcopy[i]#-}"
+	    # do assignment without checking
+	    eval "$varname"='"${pcopy[1+i]}"'
+	    unset pcopy[i]
+	    unset pcopy[1+i]
+	    (( i=i+2 ))
+	else
+	    (( i=i+1 ))
+	fi
+    done
+}
+
+look-for-implicit()
+{
+    acmd="$1"
+    varname=the"${acmd#-}"
+    [ "$(eval echo \$$varname)" != "" ] && return 0
+
+    chosen=""
+    ci=""
+    for (( i=0 ; i<plength ; i++ ))
+    do
+	apart="${pcopy[i]}"
+	if paramcheck "$acmd" "$apart"  # sets $candidate
+	then
+	    [ "$chosen" != "" ] && reportfail "ambigious parameter: ($apart and $chosen) for $acmd"
+	    chosen="$candidate"
+	    ci=i
+	    eval "$varname"="$candidate"
+	    unset pcopy[i]
+	fi
+    done
+}
+
+set-default-if-unset()
+{
+    acmd="$1"
+    varname=the"${acmd#-}"
+    [ "$(eval echo \$$varname)" != "" ] && return 0
+
+    case "$acmd" in
+	-cmd)
+	    thecmd="-domore"
+	    ;;
+	-display)
+	    # use -vnc as the default because so far have not found a
+	    # way to compile QEMU statically with SDL support.  Also,
+	    # SDL is unstable on remote X connections and can pause VM
+	    # execution when a window manager pager hides the SDL
+	    # window.
+	    thedisplay="-vnc"
+	    ;;
+	-vncviewer)
+	    thevncviewer=""  # leave same
+	    ;;
+	-vgacard)
+	    thevgacard="-vmware"
+	    ;;
+	-screen)
+	    thescreen="1024"
+	    ;;
+	-keyboard)
+	    thekeyboard="-en"
+	    ;;
+	-verbose)
+	    theverbose=""
+	    ;;
+	-preaction)
+	    thepreaction=""
+	    ;;
+	-script)
+	    [ "$thecmd" == "-dofresh" ] \
+		&& [ "$restmarker" == "" ] && reportfail "script file or string not set"
+	    thescript=""   # allow no script file to allow simple VM booting and simple use of -show
+	    ;;
+	-args)
+	    theargs=""
+	    ;;
+	-sndir)
+	    thesndir=""
+	    ;;
+	-bootinfo)
+	    if [ -d "$thevmdir/link-to-bootinfo" ]
+	    then
+		thebootinfo="$(readlink "$thevmdir/link-to-bootinfo")"
+	    elif [ "$thesndir" != "" ]
+	    then
+		[ -d "$thesndir/link-to-bootinfo" ] || reportfail "bootdir not found inside snapshot directory: $thesndir"
+		thebootinfo="$(readlink -f "$thesndir/link-to-bootinfo")"
+	    else
+		thebootinfo="$(most-recent-bootinfo)" || reportfail "boot info directory not set"
+	    fi
+	    ;;
+	-cpubits)
+	    thecpubits="32bits"
+	    ;;
+	-vmdir)
+	    thevmdir=""
+	    ;;
+	-mem)
+	    if [ -f "$thesndir/themem" ]
+	    then
+		themem="$(<"$thesndir/themem")"
+	    else
+		themem="1024"
+	    fi
+	    ;;
+	*) reportfail BUG
+	    ;;
+    esac
+}
+
+redirect-therest()
+{
+    firsttoken="${therest%% *}"
+    if [[ "$(file -ikbL -- "$firsttoken")" == *ascii* ]]
+    then # treat contents of file at $firsttoken as the script
+	[ "$firsttoken" != "$therest" ] && theargs="${therest#* }"
+	exec <"$firsttoken"
+    else # treat all of "$therest" as the script
+	exec <<<"$therest"
+    fi
+    thescript='-' # take script from stdin
+}
+
+parseparams()
+{
+    pcopy=( "$@" )
+    plength="$#"
+    set-explicit-parts
+
+    for acmd in "${cmdlineparts[@]}"
+    do
+	look-for-implicit "$acmd"
+    done
+
+    [ "${pcopy[*]}" == "" ] || reportfail "unrecognized parameters: ${pcopy[*]}"
+
+    for acmd in "${cmdlineparts[@]}"
+    do
+	set-default-if-unset "$acmd"
+    done
+
+    # -- gives fresh boot, but is non destructive of existing VM
+    # ++ and ... add more, i.e. continue
+    # Putting / as a prefix on any of those "slashes" or destroys existing VM if any
+    # So /++ and /... are not really doing more, but allow a repeat from scratch with
+    # only one editing keypress.
+    if [ "$restmarker" = "--" ]
+    then
+	thecmd="-dofresh"
+	redirect-therest
+    fi
+    if [ "$restmarker" = "++" ] || [ "$restmarker" = "..." ]
+    then
+	thecmd="-domore"
+	redirect-therest
+    fi
+    if [ "$thepreaction" == "-rm" ] || [ "$restmarker" = "/--" ]  || \
+	[ "$restmarker" = "/..." ]  || [ "$restmarker" = "/++" ]
+    then
+	thecmd="-redo"
+	redirect-therest
+    fi
+}
+
+setupvnc()
+{
+    export kvmDISP="-vnc :$(( vncHPORT - 5900 ))"
+
+    # from http://www.mail-archive.com/qemu-devel@nongnu.org/msg04879.html
+    # Since the QEmu VNC code is completely asynchronous, we have a
+    # much larger window where this race can occur. The easiest thing
+    # to do is avoid the race all together and not have your client
+    # use SetPixelFormat frequently. This is really only an issue with
+    # the RealVNC client. You can avoid this by doing:
+    # vncviewer AutoSelect=0 FullColor=1
+
+    cat >vnc-show.sh <<'EOF'
+#!/bin/bash
+export SCRIPT_DIR="$(cd "$(dirname "$(readlink -f "$0")")" && pwd -P)" || exit
+cd "$SCRIPT_DIR" || exit
+
+[ -f ./vnc.pid ] && vncpid="$(< ./vnc.pid)" && \
+  [[ "$(ps "$vncpid" 2>/dev/null)" == *vncviewer* ]] && exit
+
+vncport="$(< ./vncHPORT)"
+disp=$(( vncport - 5900 ))
+params=""
+[[ "$(vncviewer --help 2>&1)" == *FullColor* ]] && params="AutoSelect=0 FullColor=1"
+
+vncpid=""
+rm -f ./vnc.pid
+
+# delay in case slow starting KVM has not opened port and RFB protocol yet
+tryn=0
+while [[ "$(netstat -nlt)" != *:$vncport\ * ]]
+do
+   (( ++tryn > 5 )) && {
+     echo "VNC port $vncport is not open" 1>&2
+     exit
+   }
+   sleep 1
+done
+
+tryn=0
+while [ "$vncpid" = "" ] || [[ "$(ps "$vncpid" 2>/dev/null)" != *vncviewer* ]]
+do
+  (( ++tryn > 5 )) && exit
+  vncviewer $params :$disp >/dev/null 2>&1 &
+  vncpid=$!
+  break  # only try once, because vncviewer puts up a dialog when it fails.
+  ## TODO: deal with this better
+  sleep 1
+done
+
+echo "$vncpid" >./vnc.pid
+EOF
+    chmod +x vnc-show.sh
+
+    cat >vnc-hide.sh <<'EOF'
+#!/bin/bash
+export SCRIPT_DIR="$(cd "$(dirname "$(readlink -f "$0")")" && pwd -P)" || exit
+cd "$SCRIPT_DIR" || exit
+
+vncpid="$(< ./vnc.pid)"
+[[ "$(ps "$vncpid" 2>/dev/null)" == *vncviewer* ]] && kill "$vncpid"
+EOF
+    chmod +x vnc-hide.sh
+}
+
+nc-in-bash() # Aims to be just like nc, client only use. Supports -w if used at 3rd and 4th parameters.
+{
+    # Since exec 3>&- closes both ingoing and outgoing connections, a
+    # special string needs to be sent and recognized by the server to
+    # signal EOF from the client to the server.  For the server inside
+    # VM, this string is "xxEOFxx".  This is indicated to nc-in-bash
+    # by setting the environment variable OUTEOF="xxEOFxx".  In other
+    # situations (like KVM monitor) it is easier to close down
+    # everything when nc-in-bash receives a certain pattern.  This pattern
+    # is set similarly with the environment variable INEOF, except
+    # that it is a glob pattern such as INEOF="*kvmmon-exit*".
+    (
+	trap 'kill "$incat" ; kill "$outcat"' SIGINT SIGHUP SIGTERM
+	ip="$1"
+	port="$2"
+	wsec=""
+	[ "$3" = "-w" ] && wsec="$4"
+
+	exec 3<>"/dev/tcp/$ip/$port" || return
+
+	exec 9<&0
+	if [ "$OUTEOF" = "" ]
+	then
+	    cat 0<&9 >&3 2>/dev/null &
+	else
+	    cat 0<&9 - <(echo "$OUTEOF") >&3 2>/dev/null & # concat stdin followed by $OUTEOF
+	fi
+	outcat="$!"
+	if [ "$INEOF" = "" ]
+	then
+	    cat <&3 2>/dev/null &
+	    incat="$!"
+	else
+	    ( IFS=''
+		while read -r ln
+		do
+		    echo "$ln"
+		    [[ "$ln" == $INEOF ]] && break
+		done
+	    ) <&3 &
+	    incat="$!"
+	fi
+
+	wcat=""
+	if [ "$wsec" != "" ]
+	then
+	    sleep "$wsec" &
+	    wcat="$!"
+	    while sleep 0.1
+	    do
+		if ! [ -d /proc/$incat ] || ! [ -d /proc/$wcat ]
+		then
+		    exec 2>/dev/null
+		    kill "$incat" 2>/dev/null
+		    kill "$outcat" 2>/dev/null
+		    kill "$wcat" 2>/dev/null
+		    exec 3>&-
+		    return 255
+		fi
+		[ -d /proc/$incat ] && continue
+		[ -d /proc/$outcat ] && continue
+		return 0
+	    done
+	else
+	    wait "$incat"
+	    kill "$outcat" 2>/dev/null
+	    exec 3>&-
+	fi
+    )
+}
+
+nc-client-workaround()
+{
+    # OpenBSD netcat (Debian patchlevel 1.89-3ubuntu2) and maybe
+    # others do not return a response if the input pipe closes too
+    # quickly.  This wrapper bash function is a tentative workaround.
+    # ( cat ; sleep 0.2 ) | nc "$1" "$2"
+    # Well that did not work, so trying the above all-bash implementation:
+    nc-in-bash "$@"
+    return
+
+    # If that does not work, just comment out the above lines and try
+    # your luck with whatever nc is on your host machine.
+    nc "$@"  # normally skiped by the above lines
+}
+
+search-up-path()
+{
+    fname="$1"
+    path="$(abspath "$2")"
+    while [ "$path" != "" ]
+    do
+	if [ -f "$path/$fname" ]
+	then
+	    echo "$path/$fname"
+	    return 0
+	fi
+	path="${path%/*}"
+    done
+    return 255
+}
+
+boot-vm-and-server() # assumes $(pwd)="special vm dir"
+{
+    for acmd in "${cmdlineparts[@]}"
+    do
+	varname="the${acmd#-}"
+	eval echo "\$$varname" >$varname
+    done
+
+    exec 9<&2
+    exec 2>/dev/null  # hide killed messages
+    # search for free ports on the host
+    for first3 in $(seq 100 199)
+    do
+	export vncHPORT=$(( 5900 + first3 - 100 ))
+	export bashHPORT=${first3}99
+	export sshHPORT=${first3}22
+	export httpHPORT=${first3}80
+	export sftpHPORT=${first3}98
+	export monHPORT=${first3}97
+
+	export lockHPORT=${first3}95
+
+	# Assuming only one process can bind the port with nc and that
+	# failing nc will terminate within 0.2 sec. (wrapping in a
+	# process to supress messages to stdout when it is
+	# terminiated)
+	lockpid="$( nc -l "$lockHPORT" 2>/dev/null >/dev/null & echo $!)"
+	sleep 0.2
+	if ! [ -d "/proc/$lockpid" ]
+	then
+	    # some other script is trying to claim these ports
+	    continue
+	fi
+
+	sinfo="$(netstat -nlt)"
+	for p in $vncHPORT $bashHPORT $sshHPORT $httpHPORT $sftpHPORT $monHPORT
+	do
+	    if [[ "$sinfo" == *:$p\ * ]]
+	    then
+		[ "$first3" == "199" ] && reportfail "Could not find free port on host to forward to guest"
+		kill "$lockpid"
+		continue 2
+	    fi
+	done
+	break
+    done
+    # give enough time for KVM to claim all the other ports
+    ( sleep 30 ; kill "$lockpid" ) >/dev/null 2>&1 &
+    exec 2>&9
+
+    echo "$vncHPORT" >vncHPORT
+    echo "$bashHPORT" >bashHPORT
+    echo "$sshHPORT" >sshHPORT
+    echo "$httpHPORT" >httpHPORT
+    echo "$sftpHPORT" >sftpHPORT
+    echo "$monHPORT" >monHPORT
+
+    (
+	exec 1> sftp.stdout
+	exec 2> sftp.stderr
+	mkfifo fifo-for-sftp
+	cat fifo-for-sftp | /usr/lib/sftp-server | nc -l $sftpHPORT >fifo-for-sftp &  # one shot server for sshfs
+	echo "$!" >sftp-pid
+    )
+
+    ln -s "$SCRIPT_DIR" scriptdir
+
+    cat >delete-vm-and-this-dir-shortcut.sh <<'EOF'
+#!/bin/bash
+abspath()
+{
+    p="$(dirname -- "$1")"
+    f="$(basename -- "$1")"
+    absp="$(cd "$p" && pwd || echo "$p")"
+    echo "$absp/$f"
+}
+here="$(abspath "$0")"
+here="${here%/*}"
+"$here"/scriptdir/dinkvm -rm "$here"
+EOF
+chmod +x delete-vm-and-this-dir-shortcut.sh
+
+    # the delete-vm... shortcut has been so useful, lets add another for domore
+    cat >domore-shortcut.sh <<'EOF'
+#!/bin/bash
+abspath()
+{
+    p="$(dirname -- "$1")"
+    f="$(basename -- "$1")"
+    absp="$(cd "$p" && pwd || echo "$p")"
+    echo "$absp/$f"
+}
+here="$(abspath "$0")"
+here="${here%/*}"
+"$here"/scriptdir/dinkvm -domore "$1" "$here"
+EOF
+chmod +x domore-shortcut.sh
+
+    [ "$thedisplay" = "-vnc" ] && setupvnc
+    case "$thevgacard" in
+	-vmware) kvmVGA="-vga vmware" # the default for this script
+	    ;;
+	-cirrus) kvmVGA="-vga cirrus" # the default for kvm, but has limits
+	    ;;
+	*)
+	    reportfail "bug for -display option: ($thevgacard)"
+	    ;;
+    esac
+    export kvmMEM="-m $themem"
+    # kvmMISC and kcmdlineMISC are not initialized so they
+    # can be set by the calling script
+    export kvmMISC
+    export kcmdlineMISC
+    case "$thekeyboard" in
+	-jp) kvmMISC="$kvmMISC -k ja"
+	     kcmdlineMISC="$kcmdlineMISC keyboard=jp"
+	    ;;
+	*)
+	    :  # defaults to en-us
+    esac
+    case "$thescreen" in
+	*1600* | *1200*) kcmdlineMISC="$kcmdlineMISC screen=1600x1200"
+	    ;;
+	*1024* | *768*) kcmdlineMISC="$kcmdlineMISC screen=1024x768"
+	    ;;
+	*800* | *600*) kcmdlineMISC="$kcmdlineMISC screen=800x600"
+	    ;;
+	*640* | *480*) kcmdlineMISC="$kcmdlineMISC screen=640x480"
+	    ;;
+	*) kcmdlineMISC="$kcmdlineMISC screen=$thescreen"
+	    ;;
+    esac
+
+    ln -s "$thebootinfo" link-to-bootinfo
+    if [ -f "$thesndir/kvm.state.gz" ]
+    then
+	export kvmMISC="-incoming \"exec: gzip -c -d '$thesndir/kvm.state.gz'\""
+    elif [ -f "$thesndir/kvm.state" ]
+    then
+	export kvmMISC="-incoming \"exec: cat '$thesndir/kvm.state'\""
+    fi
+
+    if [ -f "$SCRIPT_DIR/qemu/x86_64-softmmu/qemu-system-x86_64" ]
+    then
+	# Use the statically compiled QEMU
+	[ "$thedisplay" = "-vnc" ] || reportfail "-vnc required if using statically compiled QEMU"
+	export KVMBIN="'$SCRIPT_DIR/qemu/x86_64-softmmu/qemu-system-x86_64' -enable-kvm"
+    fi
+
+    if [[ "$thecpubits" == *64* ]]
+    then
+	export KVMKERNEL="./linux64"
+    fi
+
+    if ! [ -f "$thebootinfo/link-to-knoppix.iso" ]
+    then
+	# The user has to download the knoppix iso file and should be
+	# free to put it wherever desired.  To make it easier to
+	# find, the user should put it in the bootinfo dir, the dir
+	# with the dinkvm script, or one of their parent directories.
+	# A symbolic link from one of those directories to the iso file
+	# will also work as long as it is named the same.
+	fname="$(cat "$thebootinfo/iso-filename.txt")" || reportfail "iso filename not in bootinfo dir"
+	KVMISO="$(search-up-path "$fname" "$thebootinfo")" || \
+	    KVMISO="$(search-up-path "$fname" "$SCRIPT_DIR")" || reportfail "could not find $fname"
+	export KVMISO="$(readlink -f "$KVMISO")"
+    fi
+
+    export dinkvmMARKER=$(pwd)
+    setsid bash -x "$thebootinfo/start-scriptable-kvm.sh" >kvm.stdout 2>kvm.stderr &
+
+    echo "$!" >kvm.pid
+    sleep 2
+    
+
+    # grep for a string like "No accelerator found!"
+    if grep -i accele kvm.stderr 2>/dev/null 1>/dev/null
+    then
+	cat 1>&2 <<EOF
+
+Probably failed to initialize KVM kernel module accelerator (/dev/kvm),
+so things may run vvvvvvvvvvery ssssslowly. Try
+"sudo adduser `id -un` kvm" to join the kvm group.
+
+EOF
+	sleep 5
+    fi
+
+    if ! kill -0 "$(< kvm.pid)"
+    then
+	# must be some problem starting kvm so go ahead and clutter output with kvm.stdio
+	echo "KVM stdout:"
+	cat kvm.stdout
+	echo "KVM stderr:"
+	cat kvm.stderr
+	reportfail "KVM did not start"
+    fi
+
+    if [[ "$thevncviewer" == *show* ]]
+    then
+	./vnc-show.sh &
+    fi
+}
+
+setup-scriptfile()
+{
+    [ "$1" = "" ] && return
+    if [ "$1" = "-" ]
+    then
+	scriptfile=/dev/fd/0
+    else
+	scriptfile="$(abspath "$1")"
+    fi
+
+    [ -r "$scriptfile" ] || [ -p "$scriptfile" ] || reportfail "The script $scriptfile was not found"
+}
+
+send-script()
+{
+    sf="$1"
+    [ "$sf" = "" ] && return  # a missing script file is OK to allow simple VM booting and simple use of -show
+    # This first script is sent before every script.  It is really only
+    # necessary the first script, to check that the VM has booted and the 
+    # ash server is up and running
+    while [ "$(echo whoami | OUTEOF="xxEOFxx" nc-client-workaround localhost "$bashHPORT" -w 1)" != "centoslive" ]
+    do
+	kill -0 "$(< kvm.pid)" 2>/dev/null || reportfail "VM already exited"
+	sleep 1
+    done
+    # since script is just piped to bash, args to script are set by using the "set"
+    # command prefixed to the start of the script. For now, this seems to work OK.
+    (
+	[ "$theargs" != "" ] && echo "set -- $theargs ; "
+	exec cat "$sf"
+    ) | OUTEOF="xxEOFxx" nc-client-workaround localhost "$bashHPORT"
+}
+
+make-anonymous-vm-name()
+{
+    # Return an make a unique directory to use as the vmdir.  Put it
+    # relative to the current working directory, because the sshfs
+    # mount will be relative to the vmdir, and so by default it will
+    # be relative to $(pwd), which can make scripting dinkvm easier.
+    # Make the suffix always 4 digits and one greater than the largest
+    # currently existing suffix in the current directory.
+
+    latest="$( shopt -s nullglob
+               allsofar=( tmpvm-* )
+               echo "${allsofar[@]: -1}" # last in array
+             )"
+    latest="${latest//[^0-9]/}" # remove non-digits
+    [ "$latest" == "" ] && latest=0
+    vmname="$(pwd)/$(printf "tmpvm-%04d" $(( 10#$latest + 1 )) )" # the 10# prevents interpretation as octal
+    mkdir "$vmname" || reportfail "could not make vmdir $vmname"
+    echo "$vmname"
+}
+
+dofreshcmd()
+{
+    setup-scriptfile "$2"
+    avmdir="${3%/}"
+
+    if [ "$avmdir" = "" ]
+    then
+	avmdir="$(make-anonymous-vm-name)" || exit
+	touch "$avmdir/auto-remove-flag"
+    else
+	mkdir "$avmdir" || reportfail "$avmdir already exists"
+	remove=false
+    fi
+
+    cd "$avmdir" || reportfail "cd $avmdir"
+
+    boot-vm-and-server
+
+    (
+vmdirname="${avmdir##*/}"
+cat <<EOF
+mkdir onhost 2>>/tmp/hide.stderr
+# connect one dir up from VM dir
+rm -f vmdir
+ln -s onhost/"$vmdirname" vmdir
+
+echo busy >/tmp/umount.stderr
+while grep busy /tmp/umount.stderr
+do
+  echo Umount
+  sudo umount  onhost 2>/tmp/umount.stderr  # for when restoring from snapshot, maybe unnecessary
+  ls onhost # This is necessary to shake it out of being busy!
+  sleep 0.5
+done  >/tmp/sshfs.log 2>&1
+
+sudo sshfs -o allow_other -o directport=$sftpHPORT 10.0.2.2:.. onhost >sshfs.stdout 2>sshfs.stderr </dev/null &
+echo "Did sshfs." >/tmp/sshfs.log
+EOF
+) | send-script /dev/fd/0
+
+    send-script "$scriptfile"
+    
+    [ -f "$avmdir/auto-remove-flag" ] && dinkvm -rm "$avmdir" >/dev/null
+    return 0
+}
+
+redocmd()
+{
+    setup-scriptfile "$2"
+    avmdir="$3"
+    shift 3
+
+    dinkvm -rm "$avmdir"
+    dofreshcmd not-used "$scriptfile" "$avmdir"
+}
+
+domorecmd()
+{
+    setup-scriptfile "$2"
+    avmdir="$3"
+
+    [ "$avmdir" != "" ] || reportfail "-vmdir must be specified for -domore"
+
+    if ! [ -d "$avmdir" ]
+    then
+	dofreshcmd not-used "$scriptfile" "$avmdir"
+	return
+    fi
+
+    kvmpid="$(cat "$avmdir/kvm.pid" 2>/dev/null)"
+    [[ "$(ps "$kvmpid" 2>/dev/null)" == *kvm* ]] || reportfail "VM not running."
+    cd "$avmdir" || reportfail "cd $avmdir"
+
+    export bashHPORT="$(< bashHPORT)"
+    export sshHPORT="$(< sshHPORT)"
+    export httpHPORT="$(< httpHPORT)"
+    export sftpHPORT="$(< sftpHPORT)"
+    export monHPORT="$(< monHPORT)"
+
+    if [[ "$thevncviewer" == *show* ]]
+    then
+	./vnc-show.sh &
+    fi
+    if [[ "$thevncviewer" == *hide* ]]
+    then
+	./vnc-hide.sh &
+    fi
+
+    send-script "$scriptfile"
+    return 0
+}
+
+do-rm-cmds()
+{
+    case "$1" in
+	-rmvm)
+	    shift
+	    while [ "$#" != 0 ]
+	    do
+		local avmdir="$1"
+		shift
+		[ -d "$avmdir" ] || reportfail "directory $avmdir not found"
+		##
+		kvmpid="$(cat "$avmdir/kvm.pid" 2>/dev/null)"
+		if [[ "$(ps "$kvmpid" 2>/dev/null)" == *kvm* ]]
+		then
+		    echo killing VM: kill "$kvmpid" 1>&2
+		    kill "$kvmpid"
+		else
+		    echo "Old VM not running, so no need to remove it." 1>&2
+		fi
+		##
+		sftppid="$(cat "$avmdir/sftp-pid" 2>/dev/null)"
+		if [[ "$(ps "$sftppid" 2>/dev/null)" == *nc* ]]  # really the outgoing nc
+		then
+		    kill "$sftppid"
+		fi
+	    done
+	    :
+	    ;;
+	-rm)
+            ## TODO: make this safer, now that -rm is an option to -dofresh and -domore
+	    shift
+	    while [ "$#" != 0 ]
+	    do
+		local avmdir="$1"
+		shift
+		if [ -d "$avmdir" ]
+		then
+		    if [ -f "$avmdir/delete-vm-and-this-dir-shortcut.sh" ]
+		    then
+			dinkvm -rmvm  "$avmdir"
+			echo removing VM dir: rm -fr "$avmdir" 1>&2
+			rm -fr "$avmdir"
+		    else
+			echo "$avmdir is not a VM directory"
+		    fi
+		else
+		    echo "$avmdir not found for removal" 1>&2
+		fi
+	    done
+	    ;;
+	*) usage
+	    ;;
+    esac
+}
+
+set-vm-ip()
+{
+    vm="$1"
+    ipsuffix="$2"
+    ipsuffixhex="$(printf "%02x" "$ipsuffix")"
+    result=$("$SCRIPT_DIR"/dinkvm -domore "$vm" - <<EOF
+exec 2>/tmp/yy
+set -x
+while read uuid device default therest
+do
+   if [ "\$default" = "no" ]
+   then 
+      nmcli con delete uuid \$uuid
+      echo "\$device" >/tmp/non-default-eth
+   fi
+done <<<"\$(nmcli con status | cut -c 25- | tee /tmp/ww)"
+if [ -f /tmp/non-default-eth ]
+then
+   sudo ifconfig \$(< /tmp/non-default-eth) 192.168.1.$ipsuffix hw ether 52:54:00:12:00:$ipsuffixhex
+fi
+EOF
+    )
+}
+
+do-net-cmds()
+{
+    case "$1" in
+	-net)
+	    shift
+	    vmdirs=( )
+	    portstart=""
+	    for param in "$@"
+	    do
+		if [ -f "$param/delete-vm-and-this-dir-shortcut.sh" ]
+		then
+		    if [ "$("$SCRIPT_DIR"/dinkvm "$param" ... echo OK)" == "OK" ]
+		    then
+			echo "VM at $param responds."
+			vmdirs=( "${vmdirs[@]}" "$param" )
+		    else
+			reportfail "no response from VM at $param"
+		    fi
+		else
+		    [ "$portstart" == "" ] || reportfail "extra parameter: $param"
+		    [ "x${param//[0-9]/}" == "x" ] || reportfail "expecting starting port number to be all digits: $param"
+		    (( param >= 1 && param <= 254 )) || reportfail "expecting starting port number out of range 1..255: $param"
+		    portstart="$param"
+		fi
+	    done
+	    [ "$portstart" = "" ] && portstart="1"
+	    (( (portstart + ${#vmdirs[@]}) <=254 )) || reportfail "port assignment would go beyond 254"
+	    for vm in "${vmdirs[@]}"
+	    do
+		set-vm-ip "$vm" $(( portstart++ ))
+	    done
+	    ;;
+	*) usage
+	    ;;
+    esac
+}
+
+do-save-cmd()
+{
+    cmd="$1"
+    vmdir="$2"
+    snapshotdir="$(abspath "$3")"
+    [ -f "$vmdir/delete-vm-and-this-dir-shortcut.sh" ] || reportfail "expecting vmdir: $vmdir"
+    mkdir "$snapshotdir" || reportfail "could not create snapshot directory : $snapshotdir"
+    monHPORT="$(cat "$vmdir/monHPORT")"
+    head -n 1 "$vmdir/kvm.stdout" >"$snapshotdir/thewholecmdline"
+    ln -s "$(readlink -f "$vmdir/link-to-bootinfo")" "$snapshotdir/link-to-bootinfo"
+    cp "$vmdir"/the* "$snapshotdir"
+
+    if [[ "$cmd" == *gz* ]] # -save-gz, -savegz, -savegzip, etc.
+    then
+	execstr="exec: dd bs=64k | gzip -c >'$snapshotdir/kvm.state.gz'"
+    else
+	execstr="exec: dd bs=64k >'$snapshotdir/kvm.state'"
+    fi
+
+    # xxMYEXITxx will produce an error on the monitor and have not effect
+    # other than being echoed back where the client can recognize it
+    # know it is OK to shut down the connection
+    INEOF="*xxMYEXITxx*"  nc-client-workaround localhost "$monHPORT" <<EOF
+stop
+migrate_set_speed 4095m 
+migrate "$execstr"
+cont
+xxMYEXITxx
+EOF
+}
+
+dinkvm()
+{
+    if [[ "$1" == -ls ]] || [[ "$1" == -survey ]]
+    then
+	grep dinkvmMARKER /proc/[0-9]*/environ 2>/dev/null | \
+	    while read ln
+	do
+	    # ln is now something like "Binary file /proc/11942/environ matches"
+	    thepid="${ln//[^0-9]/}" # remove non-digits
+	    thevmdir="$(readlink /proc/"$thepid"/fd/2)"
+	    thevmdir="${thevmdir%/*}"
+	    printf "pid=%6d %s\n" $thepid "$thevmdir"
+	    if [ "$2" = '-rm' ] && [ -d "$thevmdir" ]
+	    then
+		dinkvm -rm "$thevmdir"
+	    fi
+	done
+	return
+    fi
+    if [[ "$1" == -rm* ]]
+    then
+	do-rm-cmds "$@" # completely different and simpler parsing
+	return
+    fi
+    if [[ "$1" == -net* ]]
+    then
+	do-net-cmds "$@" # completely different and simpler parsing
+	return
+    fi
+    if [[ "$1" == -save* ]]
+    then
+	do-save-cmd "$@"
+	return
+    fi
+    if [[ "$1" == --help ]]
+    then
+	if [[ "$2" == opt* ]]
+	then
+	    usage-options
+	else
+	    usage
+	fi
+	return
+    fi
+    # else
+    parseparams "$@"
+    [ "$thevmdir" != "" ] && thevmdir="$(abspath "$thevmdir")"
+    [ "$thesndir" != "" ] && thesndir="$(abspath "$thesndir")"
+    [ "$thebootinfo" != "" ] && thebootinfo="$(abspath "$thebootinfo")"
+    case "$theverbose" in
+	-v) dumpcmds
+	    ;;
+	-dry) dumpcmds
+	    exit
+	    ;;
+    esac
+
+    [ "$theverbose" == "-v" ] && dumpcmds
+
+    case "$thecmd" in
+	-dofresh)
+	    dofreshcmd -do "$thescript" "$thevmdir"
+	    ;;
+	-redo)
+	    redocmd -redo "$thescript" "$thevmdir"
+	    ;;
+	-domore)
+	    domorecmd -domore  "$thescript" "$thevmdir"
+	    ;;
+	*) usage
+	    ;;
+    esac
+}
+
+dinkvm "$@"
