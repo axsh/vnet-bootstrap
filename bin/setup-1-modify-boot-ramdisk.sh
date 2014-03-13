@@ -40,19 +40,16 @@ search-up-path()
 fname="CentOS-6.4-x86_64-LiveDVD.iso"  # TODO: generalize to 6.5, etc
 bootdirname="boot-64-centos"
 
-# (also check in ~/potter in case you use the same machine as me and
-#  I have already downloaded the iso)
-KVMISO="$(search-up-path "$fname" "/home/potter/isos")" || \
-    KVMISO="$(search-up-path "$fname" "$SCRIPT_DIR/../lib/c-dinkvm")" || reportfail "could not find $fname"
+isofile="$(search-up-path "$fname" "$SCRIPT_DIR/../lib/c-dinkvm")" || reportfail "could not find $fname"
 
-echo "Using ISO file at:  $KVMISO"
+echo "Using ISO file at:  $isofile"
 echo "(Usually this script takes about 15 seconds to run)"
 
 cd "$SCRIPT_DIR/../lib/c-dinkvm"
 
 rm -fr "$bootdirname"
 
-sudo ./make-scriptable-kvm-knoppix.sh "$KVMISO" "$bootdirname"
+sudo ./make-scriptable-kvm-knoppix.sh "$isofile" "$bootdirname"
 sudo chown -R "$(id -un)":"$(id -un)" "$bootdirname"
 
 echo "Finished.  If there was no other output, then probably everything is OK"
