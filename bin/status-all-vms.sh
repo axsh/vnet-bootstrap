@@ -6,8 +6,8 @@ reportfail()
     exit 255
 }
 
-[ -d vnet-install-script ] || reportfail "expect to be run from parent dir of .../vnet-install-script/"
-[ -d c-dinkvm ] || reportfail "expect to be run from parent dir of .../c-dinkvm/"
+export SCRIPT_DIR="$(cd "$(dirname "$(readlink -f "$0")")" && pwd -P)" || reportfail  # use -P to get expanded absolute path
+source "$SCRIPT_DIR/lib/share-code.source"
 
 for i in 1 2 3 r
 do
