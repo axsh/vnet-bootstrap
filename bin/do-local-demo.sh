@@ -26,5 +26,10 @@ then
     esac
 fi
 
+for d in lib vnet-vendor var-cache-yum
+do
+    [ -d "$d" ] || ln -s "$R/$d" "$d"
+done
+
 time "$DINKVM" vm1 -mem 2000 -show ... sudo bash onhost/vnet-install-script/test-vnet-in-dinkvm.sh do -- git 1 "$@"
 
