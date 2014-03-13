@@ -5,7 +5,7 @@ export DINKVM="$R/lib/c-dinkvm/dinkvm"
 [ -d "$R/lib/vnet-install-script" ] && \
     [ -d "$R/lib/c-dinkvm" ] || reportfail "Directory layout is not correct"
 
-for d in lib vnet-vendor var-cache-yum sbuml-resources
+for d in lib vnet-vendor var-cache-yum sbuml-resources bin projects
 do
     [ -d "$d" ] || ln -s "$R/$d" "$d"
 done
