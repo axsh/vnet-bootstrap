@@ -1,0 +1,11 @@
+export PWD="$(pwd)"
+export R="$SCRIPT_DIR/.."
+export DINKVM="$R/lib/c-dinkvm/dinkvm"
+
+[ -d "$R/lib/vnet-install-script" ] && \
+    [ -d "$R/lib/c-dinkvm" ] || reportfail "Directory layout is not correct"
+
+for d in lib vnet-vendor var-cache-yum sbuml-resources
+do
+    [ -d "$d" ] || ln -s "$R/$d" "$d"
+done

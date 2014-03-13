@@ -6,14 +6,8 @@ reportfail()
     exit 255
 }
 
-export PWD="$(pwd)"
 export SCRIPT_DIR="$(cd "$(dirname "$(readlink -f "$0")")" && pwd -P)" || reportfail  # use -P to get expanded absolute path
-export R="$SCRIPT_DIR/.."
-export DINKVM="$R/lib/c-dinkvm/dinkvm"
-
-[ -d "$R/lib/vnet-install-script" ] && \
-    [ -d "$R/lib/c-dinkvm" ] || reportfail "Directory layout is not correct"
-
+source "$SCRIPT_DIR/share-code.source"
 
 if [ -d vm1 ]
 then
@@ -26,10 +20,4 @@ then
     esac
 fi
 
-for d in lib vnet-vendor var-cache-yum sbuml-resources
-do
-    [ -d "$d" ] || ln -s "$R/$d" "$d"
-done
-
 time "$DINKVM" vm1 -mem 2000 -show ... sudo bash onhost/lib/vnet-install-script/test-vnet-in-dinkvm.sh do -- git 1 "$@"
-
