@@ -586,7 +586,7 @@ parseparams()
 
 setupvnc()
 {
-    export kvmDISP="-vnc :$(( vncHPORT - 5900 ))"
+    export kvmDISP="-vnc 0.0.0.0:$(( vncHPORT - 5900 ))"
 
     # from http://www.mail-archive.com/qemu-devel@nongnu.org/msg04879.html
     # Since the QEmu VNC code is completely asynchronous, we have a
