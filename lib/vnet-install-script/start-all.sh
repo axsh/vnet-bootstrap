@@ -27,7 +27,6 @@ do-until-done()
     echo $ccc >inprogress-$vmid
     while [ -f inprogress-$vmid ]
     do
-	set -x
 	snapshot=""
 	[ -d ./snapshots/snapshot-all ] && snapshot=./snapshots/snapshot-all
 	[ -d ./snapshots/snapshot-vm$i ] && snapshot=./snapshots/snapshot-vm$i
@@ -35,7 +34,6 @@ do-until-done()
 	divider >>log$vmid
 	time ./lib/c-dinkvm/dinkvm -mem "$mem"  $snapshot vm$i ... sudo bash  \
 	     onhost/lib/vnet-install-script/test-vnet-in-dinkvm.sh do "$@" &
-	set +x
 	echo "$!" >pid$vmid
 	sleep 2
 	wait
