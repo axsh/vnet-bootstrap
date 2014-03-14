@@ -32,7 +32,7 @@ do-until-done()
 	[ -d snapshot-vm$i ] && snapshot=snapshot-vm$i
 	echo $(( ++ccc )) >inprogress-$vmid
 	divider >>log$vmid
-	time ./lib/c-dinkvm/dinkvm -mem "$mem" vm$i ... sudo bash  \
+	time ./lib/c-dinkvm/dinkvm -mem $snapshot "$mem" vm$i ... sudo bash  \
 	    onhost/lib/vnet-install-script/test-vnet-in-dinkvm.sh do "$@" &
 	echo "$!" >pid$vmid
 	sleep 2
