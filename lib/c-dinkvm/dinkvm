@@ -845,7 +845,7 @@ abspath()
 }
 here="$(abspath "$0")"
 here="${here%/*}"
-"$here"/scriptdir/dinkvm -domore "$1" "$here"
+"$here"/scriptdir/dinkvm -vmdir "$here" ... "$@" 
 EOF
 chmod +x domore-shortcut.sh
 
