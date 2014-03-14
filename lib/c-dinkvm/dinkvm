@@ -849,6 +849,23 @@ here="${here%/*}"
 EOF
 chmod +x domore-shortcut.sh
 
+    # a new shortcut for vnet
+    cat >vnetscript-shortcut.sh <<'EOF'
+#!/bin/bash
+abspath()
+{
+    p="$(dirname -- "$1")"
+    f="$(basename -- "$1")"
+    absp="$(cd "$p" && pwd || echo "$p")"
+    echo "$absp/$f"
+}
+here="$(abspath "$0")"
+here="${here%/*}"
+"$here"/scriptdir/dinkvm -vmdir "$here" ... sudo bash  \
+	    onhost/lib/vnet-install-script/test-vnet-in-dinkvm.sh "$@" 
+EOF
+chmod +x vnetscript-shortcut.sh
+
     [ "$thedisplay" = "-vnc" ] && setupvnc
     case "$thevgacard" in
 	-vmware) kvmVGA="-vga vmware" # the default for this script
