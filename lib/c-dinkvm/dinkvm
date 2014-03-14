@@ -866,6 +866,22 @@ here="${here%/*}"
 EOF
 chmod +x vnetscript-shortcut.sh
 
+    # and another
+    cat >ssh-shortcut.sh <<'EOF'
+#!/bin/bash
+abspath()
+{
+    p="$(dirname -- "$1")"
+    f="$(basename -- "$1")"
+    absp="$(cd "$p" && pwd || echo "$p")"
+    echo "$absp/$f"
+}
+here="$(abspath "$0")"
+here="${here%/*}"
+ssh -p $(cat "$here/sshHPORT") -i "$here"/scriptdir/vnet-tests-ssh-private-key root@localhost "$@"
+EOF
+chmod +x ssh-shortcut.sh
+
     [ "$thedisplay" = "-vnc" ] && setupvnc
     case "$thevgacard" in
 	-vmware) kvmVGA="-vga vmware" # the default for this script
