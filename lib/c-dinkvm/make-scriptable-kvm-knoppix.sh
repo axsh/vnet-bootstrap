@@ -246,15 +246,16 @@ portforward="hostfwd=tcp:127.0.0.1:\$httpHPORT-:80,\$portforward"
 [ "\$usernet" = "" ] && usernet="-net nic,vlan=0,model=virtio -net user,vlan=0,\$portforward"
 
 # (4) mcast network
+[ "\$mcastADDR" = "" ] && mcastADDR="230.0.0.1"
 [ "\$mcastPORT" = "" ] && mcastPORT="1234"
-[ "\$mcastMAC" = "" ] && mcastMAC="52:54:00:12:00:00"
-[ "\$mcastnet" = "" ] && mcastnet="-net nic,vlan=1,macaddr=\$mcastMAC  -net socket,vlan=1,mcast=230.0.0.1:1234"
+[ "\$mcastMAC" = "" ] && mcastMAC="52:54:00:12:00"  # must add the 6th part below
 
-mcastnet1="-net nic,vlan=1,macaddr=\$mcastMAC  -net socket,vlan=1,mcast=230.0.0.1:12341"
-mcastnet2="-net nic,vlan=2,macaddr=\$mcastMAC  -net socket,vlan=2,mcast=230.0.0.1:12342"
-mcastnet3="-net nic,vlan=3,macaddr=\$mcastMAC  -net socket,vlan=3,mcast=230.0.0.1:12343"
-mcastnet4="-net nic,vlan=4,macaddr=\$mcastMAC  -net socket,vlan=4,mcast=230.0.0.1:12344"
-mcastnet5="-net nic,vlan=5,macaddr=\$mcastMAC  -net socket,vlan=5,mcast=230.0.0.1:12345"
+mcastnet1="-net nic,vlan=1,macaddr=\$mcastMAC:01  -net socket,vlan=1,mcast=\$mcastADDR:\${mcastPORT}1"
+mcastnet2="-net nic,vlan=2,macaddr=\$mcastMAC:02  -net socket,vlan=2,mcast=\$mcastADDR:\${mcastPORT}2"
+mcastnet3="-net nic,vlan=3,macaddr=\$mcastMAC:03  -net socket,vlan=3,mcast=\$mcastADDR:\${mcastPORT}3"
+mcastnet4="-net nic,vlan=4,macaddr=\$mcastMAC:04  -net socket,vlan=4,mcast=\$mcastADDR:\${mcastPORT}4"
+mcastnet5="-net nic,vlan=5,macaddr=\$mcastMAC:05  -net socket,vlan=5,mcast=\$mcastADDR:\${mcastPORT}5"
+# mcast
 
 # (5) memory
 [ "\$kvmMEM" = "" ] && kvmMEM="-m 1024"
