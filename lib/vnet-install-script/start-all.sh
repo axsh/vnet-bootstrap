@@ -7,8 +7,8 @@ reportfail()
     exit 255
 }
 
-[ -d ./vnet-install-script ] || reportfail "expect to be run from parent dir of .../vnet-install-script/"
-[ -d ./lib/c-dinkvm ] || reportfail "expect to be run from parent dir of .../c-dinkvm/"
+[ -d ./lib/vnet-install-script ] || reportfail "expect to be run from grandparent dir of .../vnet-install-script/"
+[ -d ./lib/c-dinkvm ] || reportfail "expect to be run from grandparent dir of .../c-dinkvm/"
 
 divider()
 {
@@ -32,13 +32,13 @@ do-until-done()
 	[ -d snapshot-vm$i ] && snapshot=snapshot-vm$i
 	echo $(( ++ccc )) >inprogress-$vmid
 	divider >>log$vmid
-	time ./c-dinkvm/dinkvm -mem "$mem" vm$i ... sudo bash  \
-	    onhost/vnet-install-script/test-vnet-in-dinkvm.sh do "$@" &
+	time ./lib/c-dinkvm/dinkvm -mem "$mem" vm$i ... sudo bash  \
+	    onhost/lib/vnet-install-script/test-vnet-in-dinkvm.sh do "$@" &
 	echo "$!" >pid$vmid
 	sleep 2
 	wait
-	result="$(./c-dinkvm/dinkvm -mem "$mem" vm$i ... sudo bash  \
-	    onhost/vnet-install-script/test-vnet-in-dinkvm.sh check1 "$@" &
+	result="$(./lib/c-dinkvm/dinkvm -mem "$mem" vm$i ... sudo bash  \
+	    onhost/lib/vnet-install-script/test-vnet-in-dinkvm.sh check1 "$@" &
             )"
 	if [[ "$result" != *Not* ]]
 	then
