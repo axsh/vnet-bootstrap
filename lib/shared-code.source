@@ -9,3 +9,15 @@ for d in lib vnet-vendor var-cache-yum sbuml-resources bin projects
 do
     [ -d "$d" ] || ln -s "$R/$d" "$d"
 done
+
+if ! [ -f mcast-address.txt ]
+then
+    # generate x, y, & z in 230.x.y.z to make likely unique multicast addressed
+    # by hashing current directory path
+    suffix="$(pwd | md5sum | for i in 1 2 3 ; do  ab="$(dd bs=2 count=1 2>/dev/null)" ;  echo -n .$(( 0x$ab )) ; done)"
+    # perhaps 255 and 0 could cause trouble....not sure so avoiding them:
+    safer="${suffix/%255/254}"
+    safer="${safer/%.0/.1}"
+    echo "230$safer" >mcast-address.txt
+fi
+export mcastADDR="$(cat mcast-address.txt)" || reportfail "Could not make mcast-address.txt file"
