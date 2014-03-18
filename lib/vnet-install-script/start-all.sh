@@ -27,9 +27,14 @@ do-until-done()
     echo $ccc >inprogress-$vmid
     while [ -f inprogress-$vmid ]
     do
-	snapshot=""
-	[ -d ./snapshots/snapshot-all ] && snapshot=./snapshots/snapshot-all
-	[ -d ./snapshots/snapshot-vm$vmid ] && snapshot=./snapshots/snapshot-vm$vmid
+	snapshot="" # parameter will be removed below during expansion (note: spaces in snapshot name not allowed)
+	snset=""
+	[ -d ../snapshots ] && snset="../snapshots"
+	[ -d ./snapshots ] && snset="./snapshots"
+
+	[ -d $snset/snapshot-all ] && snapshot=$snset/snapshot-all
+	[ -d $snset/snapshot-vm$vmid ] && snapshot=$snset/snapshot-vm$vmid
+
 	echo $(( ++ccc )) >inprogress-$vmid
 	divider >>log$vmid
 	time ./lib/c-dinkvm/dinkvm -mem "$mem"  $snapshot vm$vmid ... sudo bash  \
