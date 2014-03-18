@@ -505,8 +505,21 @@ set-default-if-unset()
 		thebootinfo="$(readlink "$thevmdir/link-to-bootinfo")"
 	    elif [ "$thesndir" != "" ]
 	    then
-		[ -d "$thesndir/link-to-bootinfo" ] || reportfail "bootdir not found inside snapshot directory: $thesndir"
-		thebootinfo="$(readlink -f "$thesndir/link-to-bootinfo")"
+		if [ -d "$thesndir/link-to-bootinfo" ]
+		then
+		    thebootinfo="$(readlink -f "$thesndir/link-to-bootinfo")"
+		else
+		    # Maybe somebody is playing dangerous and copying the snapshot
+		    # someplace else.  Try harder and see if it works....
+		    linkpath="$(readlink "$thesndir/link-to-bootinfo")"
+		    targetname="${linkpath##*/}"
+		    if [ -d "$SCRIPT_DIR/$targetname" ]
+		    then
+			thebootinfo="$SCRIPT_DIR/$targetname"
+		    else
+			reportfail "bootdir not found inside snapshot directory: $thesndir"
+		    fi
+		fi
 	    else
 		thebootinfo="$(most-recent-bootinfo)" || reportfail "boot info directory not set"
 	    fi
