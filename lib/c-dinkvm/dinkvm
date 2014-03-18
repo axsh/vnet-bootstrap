@@ -808,11 +808,23 @@ boot-vm-and-server() # assumes $(pwd)="special vm dir"
     echo "$sftpHPORT" >sftpHPORT
     echo "$monHPORT" >monHPORT
 
+
+    # This fifo used to be in the VM dir, but sometimes software
+    # in the VM. running that does not handle fifos well will see it.
+    # Also, if the VM dir is put in a sshfs mount, creating the fifo
+    # there is not possible.
+    fifodir="$(mktemp -d /tmp/fifo-for-sftp.XXXXXXXX)" && \
+       mkfifo "$fifodir/thefifo" || reportfail "Could not make fifo. $fifodir"
+    ( sleep 600 # way longer than booting time
+      rm -r "$fifodir" ) &
+
     (
+	# This code should restart the sftp server when the sshfs
+	# mount fails.  Surprisingly, after much use this has not
+	# happened even once, so leaving this improvement as a TODO.
 	exec 1> sftp.stdout
 	exec 2> sftp.stderr
-	mkfifo fifo-for-sftp
-	cat fifo-for-sftp | /usr/lib/sftp-server | nc -l $sftpHPORT >fifo-for-sftp &  # one shot server for sshfs
+	cat "$fifodir/thefifo" | /usr/lib/sftp-server | nc -l $sftpHPORT >"$fifodir/thefifo" &  # one shot server for sshfs
 	echo "$!" >sftp-pid
     )
 
