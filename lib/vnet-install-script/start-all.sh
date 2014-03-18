@@ -29,15 +29,15 @@ do-until-done()
     do
 	snapshot=""
 	[ -d ./snapshots/snapshot-all ] && snapshot=./snapshots/snapshot-all
-	[ -d ./snapshots/snapshot-vm$i ] && snapshot=./snapshots/snapshot-vm$i
+	[ -d ./snapshots/snapshot-vm$vmid ] && snapshot=./snapshots/snapshot-vm$vmid
 	echo $(( ++ccc )) >inprogress-$vmid
 	divider >>log$vmid
-	time ./lib/c-dinkvm/dinkvm -mem "$mem"  $snapshot vm$i ... sudo bash  \
+	time ./lib/c-dinkvm/dinkvm -mem "$mem"  $snapshot vm$vmid ... sudo bash  \
 	     onhost/lib/vnet-install-script/test-vnet-in-dinkvm.sh do "$@" &
 	echo "$!" >pid$vmid
 	sleep 2
 	wait
-	result="$(./lib/c-dinkvm/dinkvm -mem "$mem" vm$i ... sudo bash  \
+	result="$(./lib/c-dinkvm/dinkvm -mem "$mem" vm$vmid ... sudo bash  \
 	    onhost/lib/vnet-install-script/test-vnet-in-dinkvm.sh check1 "$@" &
             )"
 	if [[ "$result" != *Not* ]]
