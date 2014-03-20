@@ -127,9 +127,9 @@ do_testspec_install()
 {
     mkdir -p /opt/axsh
     cd /opt/axsh
-    if [ -d /home/centoslive/onhost/openvnet-testspec/.git ]
+    if [ -d /home/centoslive/onhost/projects/openvnet-testspec/.git ]
     then
-	git clone /home/centoslive/onhost/openvnet-testspec
+	git clone /home/centoslive/onhost/projects/openvnet-testspec
     else
 	git clone https://github.com/axsh/openvnet-testspec.git
     fi
@@ -853,9 +853,9 @@ do_vnet_from_git()
     cd /opt/axsh
     while ! [ -d /opt/axsh/openvnet ]
     do
-	if [ -d /home/centoslive/onhost/openvnet/.git ]
+	if [ -d /home/centoslive/onhost/projects/openvnet/.git ]
 	then
-	    git clone /home/centoslive/onhost/openvnet/
+	    git clone /home/centoslive/onhost/projects/openvnet/
 	else
 	    git clone https://github.com/axsh/openvnet.git
 	fi
