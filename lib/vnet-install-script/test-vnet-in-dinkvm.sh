@@ -1303,7 +1303,13 @@ add-eth1-for-rh80()
 
     wait-and-rename-tap
     # celebrate:
-    do-sbumlcmd "sbumlguestexec $VM route add default eth1"
+
+    #do-sbumlcmd "sbumlguestexec $VM route add default eth1"
+    # The next line works, but not sure if we can know for sure that
+    # ssh connections from the host VM will always look like they
+    # come from 10.0.2.15.  TODO: check closer
+    do-sbumlcmd "sbumlguestexec $VM route add -net 10.0.2.0 netmask 255.255.255.0 dev eth1"
+    
     do-sbumlcmd "sbumlguestexec $VM ifconfig eth0 \>/dev/vc/1"
     do-sbumlcmd "sbumlguestexec $VM ifconfig eth1 \>/dev/vc/1"
 
