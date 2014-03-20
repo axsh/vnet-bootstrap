@@ -140,7 +140,10 @@ do_testspec_install()
 
 	# sleep more between starting vnet and using webapi to load dataset
 	sed -i 's/sleep(3)/sleep(23)/' /opt/axsh/openvnet-testspec/lib/vnspec/invoker.rb
-
+	# sleep between starting vna and doing DHCP in the VMs
+	sed -i 's/VM.start_network/sleep(25) ; VM.start_network' \
+	    /opt/axsh/openvnet-testspec/lib/vnspec/invoker.rb
+	
 	mv /opt/axsh/openvnet-testspec/dataset/base.yml /tmp/base.yml
 	{
 	    while IFS= read -r ln ; do
