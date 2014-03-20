@@ -1356,20 +1356,6 @@ restore-prebooted-rh80vm()
     do-sbumlcmd "sbumlguestexec $VM ifconfig eth0 up $IP netmask 255.255.255.0 hw ether $MAC"
     wait-and-rename-tap
 
-    # one more workaround, because the ssh in RedHat 8.0 does not accept -o ConnectTimeout=1
-    cat >/tmp/ssh <<'EOF'
-#!/bin/bash
-cmd="$*"
-cmd="${cmd//-o ConnectTimeout=/DELETEn}"
-cmd="${cmd//DELETEn[0-9]/DELETEn}" # delete first digit
-cmd="${cmd//DELETEn[0-9]/DELETEn}" # second, if any
-cmd="${cmd//DELETEn[0-9]/DELETEn}" # third, if any
-cmdfixed="${cmd//DELETEn/}" # delete marker
-exec /usr/bin/ssh $cmdfixed
-EOF
-    chmod +x /tmp/ssh
-    do-sbumlcmd "sbumlguestexec $VM cp /h/tmp/ssh /usr/local/sbin"
-
     # and yet another workaround.  ifup and ifdown remove the tap devices on the host, so
     # disable for now.
     # Not disabling now...because the current snapshot (f1e6f2) disables
