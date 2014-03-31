@@ -347,7 +347,7 @@ do_network_restart()
 	    route add -net 172.16.90.0 netmask 255.255.255.0 gw 172.16.91.111
 	    ;;
     esac
-    route add -host 192.168.2.23 gw 10.0.2.2  # for temporary SBUML http resources
+    route add -host 192.168.2.26 gw 10.0.2.2  # for temporary SBUML http resources
     touch /tmp/finished-network-restart
 }
 
