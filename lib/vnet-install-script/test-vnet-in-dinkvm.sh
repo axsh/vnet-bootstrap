@@ -304,7 +304,7 @@ do_redis_mysql_restart()
     then
 	echo 'create database vnet;' | mysql -u root
     fi
-    cd /opt/axsh/wakame-vnet/vnet
+    cd /opt/axsh/openvnet/vnet
     bundle exec rake db:init
 }
 
@@ -467,7 +467,7 @@ do_set_etc_wakame_vnet()
     stop vnet-vna
     stop vnet-vnmgr
     stop vnet-webapi
-    cd /etc/wakame-vnet
+    cd /etc/openvnet
     sed -i 's/127.0.0.1/192.168.2.91/' common.conf vnmgr.conf webapi.conf
     sed -i "s/127.0.0.1/192.168.2.$(( $VMROLE + 90 ))/" vna.conf
     sed -i "s/id \"vna\"/id \"vna$VMROLE\"/" vna.conf
@@ -491,7 +491,7 @@ check_populate_database_for_local_test()
 do_populate_database_for_local_test()
 {
     source /tmp/rubypath.sh
-    cd /opt/axsh/wakame-vnet/vnctl/bin
+    cd /opt/axsh/openvnet/vnctl/bin
 
     ## a long sleep before first one seems to be necessary
     sleep 10
@@ -823,17 +823,17 @@ check_vnet_gems()
 do_vnet_gems()
 {
     source /tmp/rubypath.sh
-    mkdir -p /opt/axsh/wakame-vnet/vnet/.bundle
-    cat >/opt/axsh/wakame-vnet/vnet/.bundle/config <<EOF
+    mkdir -p /opt/axsh/openvnet/vnet/.bundle
+    cat >/opt/axsh/openvnet/vnet/.bundle/config <<EOF
 ---
 BUNDLE_PATH: vendor/bundle
 BUNDLE_DISABLE_SHARED_GEMS: '1'
 EOF
 
-    cd /opt/axsh/wakame-vnet/vnet
+    cd /opt/axsh/openvnet/vnet
     bundle install
     echo "$?" >"$OPTS/vnet-gems-rc"
-    cd /opt/axsh/wakame-vnet/vnctl
+    cd /opt/axsh/openvnet/vnctl
     bundle install
     echo "$?" >"$OPTS/vnctl-gems-rc"
 }
@@ -925,14 +925,14 @@ do_wakame_yum_install()
     if false  ## disable
     then
     # TODO: non-192.168 address to use outside of axsh?
-    cat >/etc/yum.repos.d/wakame-vnet.repo <<EOF
+    cat >/etc/yum.repos.d/openvnet.repo <<EOF
 [wakame-vnet]
 name=Wakame-Vnet
 baseurl=http://192.168.2.51/repos/packages/rhel/6/vnet/vnspec
 enabled=1
 gpgcheck=0
 EOF
-    cat >/etc/yum.repos.d/wakame-vnet-third-party.repo <<EOF
+    cat >/etc/yum.repos.d/openvnet-third-party.repo <<EOF
 [wakame-vnet-third-party]
 name=Wakame-Vnet
 baseurl=http://192.168.2.51/repos/packages/rhel/6/third_party/current/
@@ -1015,13 +1015,13 @@ EOF
     ( cd /root &&  tar czvf /tmp/ssh.tar.gz .ssh )
 
     # make shortcut for debugging ssh logins to set path
-    echo 'PATH=/opt/axsh/wakame-vnet/ruby/bin:$PATH' >/tmp/rubypath.sh
+    echo 'PATH=/opt/axsh/openvnet/ruby/bin:$PATH' >/tmp/rubypath.sh
     source /tmp/rubypath.sh
     # rspec scripts want ruby all setup when giving command via ssh to root
     grep ruby /root/.bash_profile || cat /tmp/rubypath.sh >> /root/.bashrc
 
     # another shortcut for vnflows-monitor
-    echo 'PATH=/opt/axsh/wakame-vnet/ruby/bin:$PATH ; /opt/axsh/wakame-vnet/vnet/bin/vnflows-monitor "$@"' >/tmp/dump.sh
+    echo 'PATH=/opt/axsh/openvnet/ruby/bin:$PATH ; /opt/axsh/openvnet/vnet/bin/vnflows-monitor "$@"' >/tmp/dump.sh
 
     # quick fix for problem with virtual box sometimes not setting up DNS
     # start inside a subprocess so that "wait" below will not wait for this
@@ -1440,7 +1440,7 @@ util-from-router-set-all-etc-wakame-vnet()
 stop vnet-vna
 stop vnet-vnmgr
 stop vnet-webapi
-cd /etc/wakame-vnet
+cd /etc/openvnet
 sed -i 's/127.0.0.1/192.168.2.91/' common.conf vnmgr.conf webapi.conf
 sed -i 's/127.0.0.1/192.168.2.$i/' vna.conf
 sed -i 's/id "vna"/id "vna${i#9}"/' vna.conf
