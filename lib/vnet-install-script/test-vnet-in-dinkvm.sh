@@ -845,12 +845,13 @@ deps_vnet_from_git='dev_git_yum_install'
 
 check_vnet_from_git()
 {
-    [ -d /opt/axsh/wakame-vnet/.git ]
+    [ -d /opt/axsh/openvnet/.git ]
 }
 
 do_vnet_from_git()
 {
     cd /opt/axsh
+    mv openvnet openvnet-hide # this should be done at the end of the rpm install
     while ! [ -d /opt/axsh/openvnet ]
     do
 	if [ -d /home/centoslive/onhost/projects/openvnet/.git ]
@@ -860,15 +861,13 @@ do_vnet_from_git()
 	    git clone https://github.com/axsh/openvnet.git
 	fi
     done
-    mv wakame-vnet wakame-vnet-hide
-    mv openvnet wakame-vnet
-    mv wakame-vnet-hide/ruby wakame-vnet/
-    rm wakame-vnet-hide -fr  # free up space
-    cd wakame-vnet/
+    mv openvnet-hide/ruby openvnet
+    rm openvnet-hide -fr  # free up space
+    cd openvnet
     [ "$COMMIT" != "" ] && git checkout "$COMMIT"
 
     (
-	cd /opt/axsh/wakame-vnet/vnet
+	cd /opt/axsh/openvnet/vnet
 	mkdir -p /home/centoslive/onhost/vnet-vendor
 	sudo ln -s /home/centoslive/onhost/vnet-vendor vendor
     )
@@ -948,7 +947,7 @@ EOF
 
 
     # TODO: this installs stuff that is not really needed
-    yum install wakame-vnet --assumeyes
+    yum install openvnet --assumeyes
 
     echo "$?" >"$OPTS/wakame-yum-rc"
 }
