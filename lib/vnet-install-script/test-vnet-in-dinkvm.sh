@@ -204,6 +204,10 @@ do_router_demo_setup()
     # TODO: What is this new machine in the spec for???
     sed -i 's/, 192.168.2.95//' /opt/axsh/openvnet-testspec/config/itest.yml
 
+    # to make secg test work:
+    sed -i 's/ping -c 1/ping -c 1 -w 10/' /opt/axsh/openvnet-testspec/lib/vnspec/vm.rb
+    sed -i 's/ssh_on_guest(cmd)[:stdout].chomp/ssh_on_guest(cmd)[:stdout].chomp ; sleep(2)/' /opt/axsh/openvnet-testspec/lib/vnspec/vm.rb
+
     # increase timeouts in vm.rb
 #    sed -i 's/ConnectTimeout: 1}/ConnectTimeout: 20}/' /opt/axsh/openvnet-testspec/lib/vnspec/vm.rb
 #    sed -i 's/timeout = 2)/timeout = 20)/' /opt/axsh/openvnet-testspec/lib/vnspec/vm.rb
