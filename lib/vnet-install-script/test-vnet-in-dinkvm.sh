@@ -201,6 +201,8 @@ do_router_demo_setup()
     
     # TODO: deal with EDGE machine better
     sed -i 's/, 192.168.2.90//' /opt/axsh/openvnet-testspec/config/itest.yml
+    # TODO: What is this new machine in the spec for???
+    sed -i 's/, 192.168.2.95//' /opt/axsh/openvnet-testspec/config/itest.yml
 
     # increase timeouts in vm.rb
 #    sed -i 's/ConnectTimeout: 1}/ConnectTimeout: 20}/' /opt/axsh/openvnet-testspec/lib/vnspec/vm.rb
