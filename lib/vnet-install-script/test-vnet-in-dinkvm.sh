@@ -206,7 +206,7 @@ do_router_demo_setup()
 
     # to make secg test work:
     sed -i 's/ping -c 1/ping -c 1 -w 10/' /opt/axsh/openvnet-testspec/lib/vnspec/vm.rb
-    sed -i 's/ssh_on_guest(cmd)[:stdout].chomp/ssh_on_guest(cmd)[:stdout].chomp ; sleep(2)/' /opt/axsh/openvnet-testspec/lib/vnspec/vm.rb
+    sed -i 's/ssh_on_guest(cmd)\[:stdout\].chomp/ssh_on_guest(cmd)[:stdout].chomp ; sleep(2)/' /opt/axsh/openvnet-testspec/lib/vnspec/vm.rb
 
     # increase timeouts in vm.rb
 #    sed -i 's/ConnectTimeout: 1}/ConnectTimeout: 20}/' /opt/axsh/openvnet-testspec/lib/vnspec/vm.rb
