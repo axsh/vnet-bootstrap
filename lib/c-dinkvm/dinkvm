@@ -903,6 +903,7 @@ abspath()
 }
 here="$(abspath "$0")"
 here="${here%/*}"
+chmod 600 "$here"/scriptdir/vnet-tests-ssh-private-key
 ssh -p $(cat "$here/sshHPORT") -i "$here"/scriptdir/vnet-tests-ssh-private-key root@localhost "$@"
 EOF
 chmod +x ssh-shortcut.sh
