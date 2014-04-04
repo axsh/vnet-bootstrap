@@ -7,6 +7,7 @@ export DINKVM="$R/lib/c-dinkvm/dinkvm"
 
 for d in lib vnet-vendor var-cache-yum sbuml-resources bin projects
 do
+    [ -d "$R/$d" ] || mkdir -p "$R/$d" # really just for vnet-vendor and var-cache-yum
     [ -d "$d" ] || ln -s "$R/$d" "$d"
 done
 
