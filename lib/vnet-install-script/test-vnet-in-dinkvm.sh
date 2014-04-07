@@ -1343,7 +1343,8 @@ restore-prebooted-rh80vm()
     # SNAPSHOT=rh80b-v005-new-ssh-client-9f37bb3885c1f901
     # SNAPSHOT=rh80b-v008-fetched-in-ssh-7e3c90d59668dd4b
     # SNAPSHOT=rh80b-v008-fetchedin-ssh-ping-etc-e4ec6c12ecc9ff34
-    SNAPSHOT=rh80b-v009-recent-netcat-from-centos-092ab975f5ce39c4
+    # SNAPSHOT=rh80b-v009-recent-netcat-from-centos-092ab975f5ce39c4
+    SNAPSHOT=rh80b-v010-move-nc-to-slash-bin-c4e5ba795eedf50b
     do-sbumlcmd "sbumlrestore $VM $SNAPSHOT -c -sd $SBUMLRESOURCES/"
     # no need to login :-)
 
