@@ -23,6 +23,24 @@ export DINKVM="$R/lib/c-dinkvm/dinkvm"
 # unknown problems.  (Also, it will look like a lot of disk space is
 # used, when in fact the links take very little space.)
 
+if ! [ -f "$R/lib/CentOS-6.4-x86_64-LiveDVD.iso" ]
+then
+    echo "Run $SCRIPT_DIR/setup-0-download-centos-iso.sh first." 1>&2
+    exit 255
+fi
+
+if ! [ -d "$R/lib/c-dinkvm/boot-64-centos/" ]
+then
+    echo "Run $SCRIPT_DIR/setup-0-download-centos-iso.sh first." 1>&2
+    exit 255
+fi
+
+if ! [ -f "$R/sbuml-resources/sbuml-core-2424-1um-1sb-12-14-2012.tar.gz" ]
+then
+    echo "Run $SCRIPT_DIR/setup-2-cache-sbuml-resources.sh first." 1>&2
+    exit 255
+fi
+
 # directories only accessed on the host
 for d in bin
 do
