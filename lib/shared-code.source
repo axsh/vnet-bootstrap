@@ -5,16 +5,40 @@ export DINKVM="$R/lib/c-dinkvm/dinkvm"
 [ -d "$R/lib/vnet-install-script" ] && \
     [ -d "$R/lib/c-dinkvm" ] || reportfail "Directory layout is not correct"
 
-for d in lib vnet-vendor var-cache-yum sbuml-resources bin projects
+# To create a new environment (with new set of isolated VMs), the user
+# only needs to create a new directory, cd to that directory, and
+# then using any bin/* script from the old directory using its full
+# path.  After that, all scripts should be available by working from
+# the new directory and issuing scripts prefixed by ./bin/*.
+
+# Therefore, if the code notices a new environment, it must copy
+# relevant directories so that a VM can find what it needs through its
+# ~/onhost mount.  This should be a perfect application of symbolic
+# links, especially since sshfs supports a feature to follow symbol
+# links.  Unfortunately, ruby Gems also uses symbolic links when
+# building, which does not work correctly after sshfs has messed with
+# them. So now, any directories that may be accessed by the VMs are
+# copied with "cp -al", which uses hard links.  The user should be
+# aware of this, because this technique may cause new subtle as yet
+# unknown problems.  (Also, it will look like a lot of disk space is
+# used, when in fact the links take very little space.)
+
+# directories only accessed on the host
+for d in bin
+do
+    [ -d "$d" ] || ln -s "$R/$d" "$d"
+done
+# directories accessed from VMs
+for d in lib vnet-vendor var-cache-yum sbuml-resources projects
 do
     [ -d "$R/$d" ] || mkdir -p "$R/$d" # really just for vnet-vendor and var-cache-yum
-    [ -d "$d" ] || ln -s "$R/$d" "$d"
+    [ -d "$d" ] || cp -al "$R/$d" "$d"
 done
 
 if ! [ -f mcast-address.txt ]
 then
-    # generate x, y, & z in 230.x.y.z to make likely unique multicast addressed
-    # by hashing current directory path
+    # generate x, y, & z in 230.x.y.z to make a likely unique multicast address
+    # by hashing the current directory path
     suffix="$(pwd | md5sum | \
                ( read -n 2 aa ; read -n 2 bb ; read -n 2 cc ; \
                  echo $((0x$aa)).$((0x$bb)).$((0x$cc)) ))"
