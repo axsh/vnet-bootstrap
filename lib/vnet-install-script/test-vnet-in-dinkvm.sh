@@ -279,6 +279,7 @@ check_itests_env_setup()
 
 do_itests_env_setup()
 {
+    # TODO, what is a clean way to do a fresh pull here?
     touch /tmp/finished-itests-env-setup
 }
 
