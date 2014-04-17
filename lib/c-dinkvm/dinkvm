@@ -782,7 +782,8 @@ boot-vm-and-server() # assumes $(pwd)="special vm dir"
 	export sshHPORT=${first3}22
 	export httpHPORT=${first3}80
 	export sftpHPORT=${first3}98
-	export monHPORT=${first3}97
+	export sftpsymHPORT=${first3}97
+	export monHPORT=${first3}96
 
 	export lockHPORT=${first3}95
 
@@ -799,7 +800,7 @@ boot-vm-and-server() # assumes $(pwd)="special vm dir"
 	fi
 
 	sinfo="$(netstat -nlt)"
-	for p in $vncHPORT $bashHPORT $sshHPORT $httpHPORT $sftpHPORT $monHPORT
+	for p in $vncHPORT $bashHPORT $sshHPORT $httpHPORT $sftpHPORT $sftpsymHPORT $monHPORT
 	do
 	    if [[ "$sinfo" == *:$p\ * ]]
 	    then
@@ -819,6 +820,7 @@ boot-vm-and-server() # assumes $(pwd)="special vm dir"
     echo "$sshHPORT" >sshHPORT
     echo "$httpHPORT" >httpHPORT
     echo "$sftpHPORT" >sftpHPORT
+    echo "$sftpsymHPORT" >sftpsymHPORT
     echo "$monHPORT" >monHPORT
 
 
@@ -827,7 +829,8 @@ boot-vm-and-server() # assumes $(pwd)="special vm dir"
     # Also, if the VM dir is put in a sshfs mount, creating the fifo
     # there is not possible.
     fifodir="$(mktemp -d /tmp/fifo-for-sftp.XXXXXXXX)" && \
-       mkfifo "$fifodir/thefifo" || reportfail "Could not make fifo. $fifodir"
+       mkfifo "$fifodir/thefifo" && \
+       mkfifo "$fifodir/thefifo-sym" || reportfail "Could not make fifos for sftp-server"
     ( sleep 600 # way longer than booting time
       rm -r "$fifodir" ) &
 
@@ -839,6 +842,11 @@ boot-vm-and-server() # assumes $(pwd)="special vm dir"
 	exec 2> sftp.stderr
 	cat "$fifodir/thefifo" | /usr/lib/sftp-server | nc -l $sftpHPORT >"$fifodir/thefifo" &  # one shot server for sshfs
 	echo "$!" >sftp-pid
+
+	exec 1> sftp-s.stdout
+	exec 2> sftp-s.stderr
+	cat "$fifodir/thefifo-sym" | /usr/lib/sftp-server | nc -l $sftpsymHPORT >"$fifodir/thefifo-sym" &  # one shot server for sshfs using -o follow_symlinks
+	echo "$!" >sftp-s-pid
     )
 
     ln -s "$SCRIPT_DIR" scriptdir
@@ -1089,6 +1097,7 @@ dofreshcmd()
 vmdirname="${avmdir##*/}"
 cat <<EOF
 mkdir onhost 2>>/tmp/hide.stderr
+mkdir onhost-follow-symlinks 2>>/tmp/hide.stderr
 # connect one dir up from VM dir
 rm -f vmdir
 ln -s onhost/"$vmdirname" vmdir
@@ -1103,8 +1112,11 @@ do
 done  >/tmp/sshfs.log 2>&1
 
 # Tried using "-o follow_symlinks" option for sshfs, but the gems would get confused with
-# when putting its own symlinks in the shared cache directory
+# when putting its own symlinks in the shared cache directory.
+# But sometimes (like for git), the symlinks are better, so now doing both!
+
 sudo sshfs -o allow_other -o directport=$sftpHPORT 10.0.2.2:.. onhost >sshfs.stdout 2>sshfs.stderr </dev/null &
+sudo sshfs -o follow_symlinks -o allow_other -o directport=$sftpsymHPORT 10.0.2.2:.. onhost-follow-symlinks >sshfs.stdout 2>sshfs.stderr </dev/null &
 echo "Did sshfs." >/tmp/sshfs.log
 EOF
 ) | send-script /dev/fd/0
@@ -1146,6 +1158,7 @@ domorecmd()
     export sshHPORT="$(< sshHPORT)"
     export httpHPORT="$(< httpHPORT)"
     export sftpHPORT="$(< sftpHPORT)"
+    export sftpsymHPORT="$(< sftpsymHPORT)"
     export monHPORT="$(< monHPORT)"
 
     if [[ "$thevncviewer" == *show* ]]
