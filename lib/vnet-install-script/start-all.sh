@@ -3,7 +3,7 @@
 
 reportfail()
 {
-    echo "Failed...exiting. ($*)"
+    echo "Failed...exiting. ($*)" 1>&2
     exit 255
 }
 
@@ -20,6 +20,7 @@ divider()
 
 verfify-not-stopped()
 {
+    sleep 0.5
     # if ./bin/stop-all-vms.sh removes a VM, don't restart it automatically
     [ -d vm$vmid ] || reportfail "Stopping because vm$vmid apparently forcibly removed."
 }
