@@ -46,5 +46,5 @@ cd vnet-from-scratch
 sudo ./bin/setup-1-modify-boot-ramdisk.sh
 ./bin/setup-2-cache-sbuml-resources.sh
 ./bin/setup-3-optional-preload-of-yum-and-gem-caches.sh
-./bin/do-local-demo
-
+./bin/start-all-vms.sh -wait
+./bin/itest-run-simple.sh
