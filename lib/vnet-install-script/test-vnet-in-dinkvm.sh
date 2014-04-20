@@ -4,7 +4,7 @@ SBUMLRESOURCES="/home/centoslive/onhost/sbuml-resources"
 
 reportfail()
 {
-    echo "Failed...exiting. ($*)"
+    echo "Failed...exiting. ($*)" 1>&2
     exit 255
 }
 
@@ -1244,7 +1244,7 @@ do1_cmd()
 	    exit 255
 	fi
     else
-	echo "Failed....exiting."
+	echo "Failed....exiting." 1>&2
 	exit 255
     fi
 }

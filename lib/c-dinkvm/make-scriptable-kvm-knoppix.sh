@@ -18,7 +18,7 @@ set -e  # stop on any error
 
 dofail()
 {
-    echo "Failed...exiting. ($@)"
+    echo "Failed...exiting. ($@)" 1>&2
     exit 255
 }
 

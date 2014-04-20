@@ -5,7 +5,7 @@
 
 reportfail()
 {
-    echo "Failed...exiting. ($*)"
+    echo "Failed...exiting. ($*)" 1>&2
     exit 255
 }
 
