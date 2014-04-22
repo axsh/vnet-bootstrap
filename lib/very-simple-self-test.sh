@@ -23,6 +23,9 @@ do the following in that directory:
 
 (1) clone vnet-from-scratch repository
 (2) run setup scripts
+(3) start all VMs with latest https://github.com/axsh/openvnet-testspec.git
+    and https://github.com/axsh/openvnet.git
+(4) execute './itest-spec run simple'
 
 OK? (y/n)
 EOF
@@ -47,4 +50,4 @@ sudo ./bin/setup-1-modify-boot-ramdisk.sh
 ./bin/setup-2-cache-sbuml-resources.sh
 ./bin/setup-3-optional-preload-of-yum-and-gem-caches.sh
 ./bin/start-all-vms.sh -wait
-./bin/itest-run-simple.sh
+./bin/itest-run-simple.sh -yes
