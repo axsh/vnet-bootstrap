@@ -11,11 +11,11 @@ source "$SCRIPT_DIR/../lib/shared-code.source"
 
 echo "About to execute ./itest-spec run $*"
 echo -n "...but sleeping for 10 seconds first to give you a change to ^C..."
-sleep 10
-echo "here we go!
+sleep 10 ; ans=yes
+echo "here we go!"
 
 case "$ans" in
     y* | Y*)
-	"$DINKVM" vmr ... 'sudo bash -c "cd /opt/axsh/openvnet-testspec/bin && source /tmp/rubypath.sh && ./itest-spec run "$*"'"'
+	"$DINKVM" vmr ... 'sudo bash -c "cd /opt/axsh/openvnet-testspec/bin && source /tmp/rubypath.sh && ./itest-spec run '"$*"'"'
 	;;
 esac
