@@ -46,7 +46,7 @@ cd testdir
 git clone "$(cd "$SCRIPT_DIR/.." ; pwd -P)"
 cd vnet-from-scratch
 ./bin/setup-0-download-centos-iso.sh
-sudo ./bin/setup-1-modify-boot-ramdisk.sh
+./bin/setup-1-modify-boot-ramdisk.sh
 ./bin/setup-2-cache-sbuml-resources.sh
 ./bin/setup-3-optional-preload-of-yum-and-gem-caches.sh
 ./bin/start-all-vms.sh -wait
