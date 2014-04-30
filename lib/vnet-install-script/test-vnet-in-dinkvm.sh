@@ -925,27 +925,32 @@ do_wakame_yum_install()
     #rpm -ivh http://dlc.wakame.axsh.jp.s3-website-us-east-1.amazonaws.com/epel-release
     rpm -ivh http://ftp.jaist.ac.jp/pub/Linux/Fedora/epel/6/i386/epel-release-6-8.noarch.rpm
 
-    curl -o /etc/yum.repos.d/openvnet.repo -R https://raw.github.com/axsh/openvnet/master/openvnet.repo
-
-    curl -o /etc/yum.repos.d/openvnet-third-party.repo -R https://raw.github.com/axsh/openvnet/master/openvnet-third-party.repo
-
-    if false  ## disable
+    if true 
     then
     # TODO: non-192.168 address to use outside of axsh?
     cat >/etc/yum.repos.d/openvnet.repo <<EOF
-[wakame-vnet]
-name=Wakame-Vnet
+[openvnet]
+name=OpenVNet
 baseurl=http://192.168.2.51/repos/packages/rhel/6/vnet/vnspec
+#baseurl=http://axsh.jp/openvnet/packages/rhel/6/vnet/current/
 enabled=1
 gpgcheck=0
 EOF
     cat >/etc/yum.repos.d/openvnet-third-party.repo <<EOF
-[wakame-vnet-third-party]
-name=Wakame-Vnet
+[openvnet-third-party]
+name=OpenVNet
 baseurl=http://192.168.2.51/repos/packages/rhel/6/third_party/current/
+#baseurl=http://axsh.jp/openvnet/packages/rhel/6/third_party/current/
 enabled=1
 gpgcheck=0
 EOF
+    fi
+
+    if false  ## disable
+    then
+    curl -o /etc/yum.repos.d/openvnet.repo -R https://raw.github.com/axsh/openvnet/master/openvnet.repo
+
+    curl -o /etc/yum.repos.d/openvnet-third-party.repo -R https://raw.github.com/axsh/openvnet/master/openvnet-third-party.repo
     fi
 
     # TODO: make proxy use optional
