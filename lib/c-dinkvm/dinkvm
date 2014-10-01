@@ -835,17 +835,25 @@ boot-vm-and-server() # assumes $(pwd)="special vm dir"
       rm -r "$fifodir" ) &
 
     (
+	for apath in /usr/libexec/openssh/sftp-server /usr/lib/sftp-server
+	do
+	    if [ -f "$apath" ]; then
+		sftppath="$apath"
+		break
+	    fi
+	done
+	
 	# This code should restart the sftp server when the sshfs
 	# mount fails.  Surprisingly, after much use this has not
 	# happened even once, so leaving this improvement as a TODO.
 	exec 1> sftp.stdout
 	exec 2> sftp.stderr
-	cat "$fifodir/thefifo" | /usr/lib/sftp-server | nc -l $sftpHPORT >"$fifodir/thefifo" &  # one shot server for sshfs
+	cat "$fifodir/thefifo" | "$sftppath" | nc -l $sftpHPORT >"$fifodir/thefifo" &  # one shot server for sshfs
 	echo "$!" >sftp-pid
 
 	exec 1> sftp-s.stdout
 	exec 2> sftp-s.stderr
-	cat "$fifodir/thefifo-sym" | /usr/lib/sftp-server | nc -l $sftpsymHPORT >"$fifodir/thefifo-sym" &  # one shot server for sshfs using -o follow_symlinks
+	cat "$fifodir/thefifo-sym" | "$sftppath" | nc -l $sftpsymHPORT >"$fifodir/thefifo-sym" &  # one shot server for sshfs using -o follow_symlinks
 	echo "$!" >sftp-s-pid
     )
 
