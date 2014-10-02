@@ -354,7 +354,7 @@ do_network_restart()
 	    route add -net 172.16.90.0 netmask 255.255.255.0 gw 172.16.91.111
 	    ;;
     esac
-    route add -host 192.168.2.26 gw 10.0.2.2  # for temporary SBUML http resources
+    route add -host 192.168.2.24 gw 10.0.2.2  # for temporary SBUML http resources
     touch /tmp/finished-network-restart
 }
 
@@ -922,6 +922,13 @@ check_wakame_yum_install()
 
 do_wakame_yum_install()
 {
+
+    releasever=6.4
+
+    yum install --disablerepo=updates -y http://dlc.openvnet.axsh.jp/packages/rhel/openvswitch/${releasever}/kmod-openvswitch-2.3.0-1.el6.x86_64.rpm
+    yum install --disablerepo=updates -y http://dlc.openvnet.axsh.jp/packages/rhel/openvswitch/${releasever}/openvswitch-2.3.0-1.x86_64.rpm
+
+
     #rpm -ivh http://dlc.wakame.axsh.jp.s3-website-us-east-1.amazonaws.com/epel-release
     rpm -ivh http://ftp.jaist.ac.jp/pub/Linux/Fedora/epel/6/i386/epel-release-6-8.noarch.rpm
 
@@ -935,7 +942,7 @@ do_wakame_yum_install()
 	done
     fi
 
-    if true
+    if false
     then
     curl -oL /etc/yum.repos.d/openvnet.repo -R https://raw.github.com/axsh/openvnet/master/openvnet.repo
 
