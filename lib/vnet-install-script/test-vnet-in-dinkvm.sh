@@ -178,7 +178,7 @@ do_testspec_gems()
 {
     source /tmp/rubypath.sh
     cd /opt/axsh/openvnet-testspec/
-    bundle install
+    bundle install --without=development
     echo "$?" >"$OPTS/testspec-gems-rc"
 }
 
