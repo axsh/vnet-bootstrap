@@ -948,7 +948,7 @@ do_wakame_yum_install()
 
 
     # TODO: this installs stuff that is not really needed
-    yum install openvnet --assumeyes
+    yum install --disablerepo=updates -y openvnet
 
     echo "$?" >"$OPTS/wakame-yum-rc"
 }
