@@ -787,6 +787,11 @@ boot-vm-and-server() # assumes $(pwd)="special vm dir"
 
 	export lockHPORT=${first3}95
 
+	# use 2 and 3rd digit to make MACs unique between machines
+	# Note: things used to work without this somehow, maybe
+	# because br0 had different unique MAC addresses
+	export mcastMAC="52:54:00:12:${first3#1}"
+
 	# Assuming only one process can bind the port with nc and that
 	# failing nc will terminate within 0.2 sec. (wrapping in a
 	# process to supress messages to stdout when it is
