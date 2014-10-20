@@ -926,7 +926,8 @@ check_wakame_yum_install()
 
 do_wakame_yum_install()
 {
-
+    ( set -x
+    
     releasever=6.4
 
     yum install --disablerepo=updates -y http://dlc.openvnet.axsh.jp/packages/rhel/openvswitch/${releasever}/kmod-openvswitch-2.3.0-1.el6.x86_64.rpm
@@ -936,6 +937,8 @@ do_wakame_yum_install()
     #rpm -ivh http://dlc.wakame.axsh.jp.s3-website-us-east-1.amazonaws.com/epel-release
     rpm -ivh http://ftp.jaist.ac.jp/pub/Linux/Fedora/epel/6/i386/epel-release-6-8.noarch.rpm
 
+    sudo sed -i -e 's,^#baseurl,baseurl,' -e 's,^mirrorlist=,#mirrorlist=,' -e 's,http://download.fedoraproject.org/pub/epel/,http://ftp.jaist.ac.jp/pub/Linux/Fedora/epel/,' /etc/yum.repos.d/epel.repo /etc/yum.repos.d/epel-testing.repo
+    
     if true 
     then
 	until curl -fsSkL -o /etc/yum.repos.d/openvnet.repo https://raw.githubusercontent.com/axsh/openvnet/master/openvnet.repo; do
@@ -962,6 +965,8 @@ do_wakame_yum_install()
     yum install --disablerepo=updates -y openvnet
 
     echo "$?" >"$OPTS/wakame-yum-rc"
+
+    ) # end set -x
 }
 
 ######## misc_initialization
