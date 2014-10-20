@@ -1,6 +1,5 @@
 #!/bin/bash
 
-
 reportfail()
 {
     echo "Failed...exiting. ($*)" 1>&2
@@ -9,6 +8,9 @@ reportfail()
 
 [ -d ./lib/vnet-install-script ] || reportfail "expect to be run from grandparent dir of .../vnet-install-script/"
 [ -d ./lib/c-dinkvm ] || reportfail "expect to be run from grandparent dir of .../c-dinkvm/"
+
+[ -f ../demo.config ] || reportfail "demo.config file must be created with ./bin/initialize-demo-configuration"
+source  ../demo.config  # only read in here for MEM-{1,2,3,r} parameters
 
 divider()
 {
@@ -28,7 +30,7 @@ verfify-not-stopped()
 do-until-done()
 {
     vmid="$1"
-    mem="$2"
+    eval mem='$'MEM-$vmid
     shift 2
     local ccc=0
     echo $ccc >inprogress-$vmid
@@ -53,12 +55,14 @@ do-until-done()
 
 	echo $(( ++ccc )) >inprogress-$vmid
 	divider >>log$vmid
-	time ./lib/c-dinkvm/dinkvm -mem "$mem"  $snapshot vm$vmid ... sudo bash  \
-	     onhost/lib/vnet-install-script/test-vnet-in-dinkvm.sh do "$@" &
+	time ( cat ../demo.config  # allow the in-vm script to use config vars freely
+	       echo sudo bash onhost/lib/vnet-install-script/test-vnet-in-dinkvm.sh do "$@" ) \
+		   | ./lib/c-dinkvm/dinkvm -script - -mem "$mem"  $snapshot vm$vmid &
 	echo "$!" >pid$vmid
 	sleep 2
 	wait
 	verfify-not-stopped
+	# (check1 does not need the config vars)
 	result="$(./lib/c-dinkvm/dinkvm -mem "$mem" vm$vmid ... sudo bash  \
 	    onhost/lib/vnet-install-script/test-vnet-in-dinkvm.sh check1 "$@" &
             )"
@@ -74,36 +78,18 @@ do-until-done()
     done
 }
 
+low-level-step="$1"
+shift
+
 for i in "$@"
 do
     case "$i" in
-	1 | 2 | 3)
-	    time do-until-done $i 2000 itests_env_setup -- git $i >>log$i $vnetcommit &
-	    ;;
-	r*)
-	    time do-until-done $i 1400 router_demo_setup -- git r >>log$i $testcommit &
-	    echo "$!" >pid$i
+	1 | 2 | 3 | r)
+	    eval time do-until-done $i
 	    ;;
 	*)
-	    if [ "$vnetcommit" == "" ]
-	    then
-		vnetcommit="$i"
-	    elif [ "$testcommit" == "" ]
-	    then
-		testcommit="$i"
-	    else
-		echo "bad parameter: $1" 1>&2
-		sleep 10
-	    fi
+	    echo "bad parameter: $1" 1>&2
+	    sleep 10
 	    ;;
     esac
-done
-
-for i in 1 2 3 r
-do
-    [ -f inprogress-$i ] && echo "Attempts for vm$i: $(cat inprogress-$i 2>/dev/null)"
-    if out="$([ -f pid$i ] && ps $(< pid$i) )"
-    then
-	echo "vm$i : $out"
-    fi
 done
