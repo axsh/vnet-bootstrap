@@ -1,13 +1,9 @@
 #!/bin/bash
 
-reportfail()
-{
-    echo "Failed...exiting. ($*)" 1>&2
-    exit 255
-}
-
 [ -d ./lib/vnet-install-script ] || reportfail "expect to be run from grandparent dir of .../vnet-install-script/"
 [ -d ./lib/c-dinkvm ] || reportfail "expect to be run from grandparent dir of .../c-dinkvm/"
+
+source ./lib/processgroup-error-handler.source
 
 [ -f ../demo.config ] && reportfail "demo.config already exists.  Delete it manually, 
 and probably any VMs and snapshots that depend on it at the same time"
