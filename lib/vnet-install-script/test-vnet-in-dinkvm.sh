@@ -1243,7 +1243,7 @@ check_cmd()
     for depstep in $deps
     do
 	check_cmd "$depstep" "$indent  --  "
-	[ "$dotout" = "" ] || continue
+	[ "$dotout" = "" ] && continue
 	echo "$depstep -> $stepname" >&44
     done
 
