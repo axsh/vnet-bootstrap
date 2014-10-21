@@ -1219,11 +1219,19 @@ check_cmd()
 {
     local stepname="$1"
     local indent="$2"
+    local dotlevel="$dotlevel"
 
+set -x
     if [ "$dotout" != "" ]; then
-	exec 44>"$dotout"
-	echo "digraph { " >&44
+	if [ "$dotlevel" = "" ]; then
+	    exec 44>"$dotout"
+	    echo "digraph { " >&44
+	    dotlevel=1
+	else
+	    dotlevel=$(( dotlevel + 1 ))
+	fi
     fi
+set +x
 
     check1_cmd "$stepname" "$indent"
     if [ "$dedup" = "yes" ]; then
@@ -1235,15 +1243,20 @@ check_cmd()
     eval 'deps=$deps_'"$stepname"
     for depstep in $deps
     do
+	echo '>>>>>>>>>' 1>&2
 	check_cmd "$depstep" "$indent  --  "
 	if [ "$dotout" != "" ]; then
 	    echo "$depstep -> $stepname" >&44
 	fi
+	echo '<<<<<' 1>&2
     done
-
-    if [ "$dotout" != "" ]; then
+set -x
+    if [ "$dotout" != "" ] && [ "$dotlevel" = "1" ]; then
 	echo "}" >&44
+    else
+	dotlevel=$(( dotlevel - 1 ))
     fi
+set +x
 }
 
 reset1_cmd()
