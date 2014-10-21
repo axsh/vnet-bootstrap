@@ -1213,8 +1213,8 @@ check1_cmd()
 }
 
 already_checked=""
-: ${dedup:=no}
-: ${dotout:=/tmp/vnet.dot3}
+: ${dedup:=yes}
+: ${dotout:=/tmp/vnet.dot}
 check_cmd()
 {
     local stepname="$1"
@@ -1222,7 +1222,6 @@ check_cmd()
     local dotlevel="$dotlevel"
     local depstep
 
-set -x
     if [ "$dotout" != "" ]; then
 	if [ "$dotlevel" = "" ]; then
 	    exec 44>"$dotout"
@@ -1232,7 +1231,6 @@ set -x
 	    dotlevel=$(( dotlevel + 1 ))
 	fi
     fi
-set +x
 
     check1_cmd "$stepname" "$indent"
     if [ "$dedup" = "yes" ]; then
@@ -1244,20 +1242,16 @@ set +x
     eval 'deps=$deps_'"$stepname"
     for depstep in $deps
     do
-	echo '>>>>>>>>>' 1>&2
 	check_cmd "$depstep" "$indent  --  "
-	if [ "$dotout" != "" ]; then
-	    echo "$depstep -> $stepname" >&44
-	fi
-	echo '<<<<<' 1>&2
+	[ "$dotout" = "" ] || continue
+	echo "$depstep -> $stepname" >&44
     done
-set -x
+
     if [ "$dotout" != "" ] && [ "$dotlevel" = "1" ]; then
 	echo "}" >&44
     else
 	dotlevel=$(( dotlevel - 1 ))
     fi
-set +x
 }
 
 reset1_cmd()
