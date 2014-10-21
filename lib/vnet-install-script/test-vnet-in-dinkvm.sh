@@ -1213,13 +1213,14 @@ check1_cmd()
 }
 
 already_checked=""
-: ${dedup:=yes}
-: ${dotout:=/tmp/vnet.dot}
+: ${dedup:=no}
+: ${dotout:=/tmp/vnet.dot3}
 check_cmd()
 {
     local stepname="$1"
     local indent="$2"
     local dotlevel="$dotlevel"
+    local depstep
 
 set -x
     if [ "$dotout" != "" ]; then
