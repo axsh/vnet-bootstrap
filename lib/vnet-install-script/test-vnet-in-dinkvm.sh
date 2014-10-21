@@ -1213,10 +1213,17 @@ check1_cmd()
 }
 
 already_checked=""
+: ${dedup:=yes}
+: ${dotout:=/tmp/vnet.dot}
 check_cmd()
 {
     local stepname="$1"
     local indent="$2"
+
+    if [ "$dotout" != "" ]; then
+	exec 44>"$dotout"
+	echo "digraph { " >&44
+    fi
 
     check1_cmd "$stepname" "$indent"
     if [ "$dedup" = "yes" ]; then
@@ -1229,7 +1236,14 @@ check_cmd()
     for depstep in $deps
     do
 	check_cmd "$depstep" "$indent  --  "
+	if [ "$dotout" != "" ]; then
+	    echo "$depstep -> $stepname" >&44
+	fi
     done
+
+    if [ "$dotout" != "" ]; then
+	echo "}" >&44
+    fi
 }
 
 reset1_cmd()
