@@ -1212,13 +1212,18 @@ check1_cmd()
     fi
 }
 
+already_checked=""
 check_cmd()
 {
     local stepname="$1"
     local indent="$2"
 
     check1_cmd "$stepname" "$indent"
-
+    if [ "$dedup" = "yes" ]; then
+	tmp="${already_checked//$stepname/}"
+	[[ "$tmp" == *,,* ]] && return
+	already_checked="$already_checked ,$stepname, "
+    fi
     local deps
     eval 'deps=$deps_'"$stepname"
     for depstep in $deps
