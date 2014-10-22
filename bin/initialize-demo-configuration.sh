@@ -5,8 +5,9 @@
 
 source ./lib/processgroup-error-handler.source
 
-[ -f ../demo.config ] && reportfail "demo.config already exists.  Delete it manually, 
-and probably any VMs and snapshots that depend on it at the same time"
+config_path="$SCRIPT_DIR/../demo.config"
+[ -f "$config_path" ] && reportfail "demo.config already exists.  Delete it manually, 
+and probably also any VMs and snapshots that depend on it"
 
 
 output-local-config()
@@ -61,10 +62,10 @@ EOF
 
 case "$1" in
     local)
-	output-local-config >../demo.config
+	output-local-config >"$config_path"
 	;;
     itest)
-	output-integration-test-config >../demo.config
+	output-integration-test-config >"$config_path"
 	;;
     *)
 	usage
