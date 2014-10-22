@@ -39,7 +39,8 @@ full_r=router_demo_setup
 EOF
     for i in 1 2 3; do
 	cat <<EOF
-MEM_$i=1400
+
+MEM_$i=2000
 boot_$i=boot
 misc_$i=ttd
 intall_$i=ttd
