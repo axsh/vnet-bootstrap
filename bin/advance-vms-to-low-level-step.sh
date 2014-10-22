@@ -9,8 +9,11 @@ reportfail()
 [ -d ./lib/vnet-install-script ] || reportfail "expect to be run from grandparent dir of .../vnet-install-script/"
 [ -d ./lib/c-dinkvm ] || reportfail "expect to be run from grandparent dir of .../c-dinkvm/"
 
-[ -f ../demo.config ] || reportfail "demo.config file must be created with ./bin/initialize-demo-configuration"
-source  ../demo.config  # only read in here for MEM-{1,2,3,r} parameters
+source ./lib/processgroup-error-handler.source
+
+config_path="$SCRIPT_DIR/../demo.config"
+[ -f "$config_path" ] || reportfail "demo.config file must be created with ./bin/initialize-demo-configuration"
+source  "$config_path"  # only read in here for MEM_{1,2,3,r} parameters
 
 divider()
 {
@@ -30,8 +33,8 @@ verfify-not-stopped()
 do-until-done()
 {
     vmid="$1"
-    eval mem='$'MEM-$vmid
-    shift 2
+    shift 1
+    eval mem='$'MEM_$vmid
     local ccc=0
     echo $ccc >inprogress-$vmid
     while [ -f inprogress-$vmid ]
@@ -55,7 +58,7 @@ do-until-done()
 
 	echo $(( ++ccc )) >inprogress-$vmid
 	divider >>log$vmid
-	time ( cat ../demo.config  # allow the in-vm script to use config vars freely
+	time ( cat "$config_path"  # allow the in-vm script to use config vars freely
 	       echo sudo bash onhost/lib/vnet-install-script/test-vnet-in-dinkvm.sh do "$@" ) \
 		   | ./lib/c-dinkvm/dinkvm -script - -mem "$mem"  $snapshot vm$vmid &
 	echo "$!" >pid$vmid
@@ -77,15 +80,15 @@ do-until-done()
 	verfify-not-stopped
     done
 }
-
-low-level-step="$1"
+set -x
+low_level_step="$1"
 shift
 
 for i in "$@"
 do
     case "$i" in
 	1 | 2 | 3 | r)
-	    eval time do-until-done $i
+	    eval time do-until-done $i "$low_level_step" &
 	    ;;
 	*)
 	    echo "bad parameter: $1" 1>&2

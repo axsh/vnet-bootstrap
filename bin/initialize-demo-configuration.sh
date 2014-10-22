@@ -15,12 +15,12 @@ output-local-config()
     cat <<EOF
 STAGES="boot misc install configure full"
 
-MEM-1=2000
-boot-1=boot
-misc-1=ttd
-intall-1=ttd
-configure-1=local_demo_setup
-full-1=local_demo_setup
+MEM_1=2000
+boot_1=boot
+misc_1=ttd
+intall_1=ttd
+configure_1=local_demo_setup
+full_1=local_demo_setup
 EOF
 }
 
@@ -30,21 +30,21 @@ output-integration-test-config()
     cat <<EOF
 STAGES="boot misc install configure full"
 
-MEM-r=1400
-boot-r=boot
-misc-r=ttd
-intall-r=ttd
-configure-r=router_demo_setup
-full-r=router_demo_setup
+MEM_r=1400
+boot_r=boot
+misc_r=ttd
+intall_r=ttd
+configure_r=router_demo_setup
+full_r=router_demo_setup
 EOF
     for i in 1 2 3; do
 	cat <<EOF
-MEM-$i=1400
-boot-$i=boot
-misc-$i=ttd
-intall-$i=ttd
-configure-$i=itests_env_setup
-full-$i=itests_env_setup
+MEM_$i=1400
+boot_$i=boot
+misc_$i=ttd
+intall_$i=ttd
+configure_$i=itests_env_setup
+full_$i=itests_env_setup
 EOF
     done
 }
