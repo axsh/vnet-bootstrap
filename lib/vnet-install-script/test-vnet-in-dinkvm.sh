@@ -354,7 +354,7 @@ deps_local_demo_setup='
 
 check_local_demo_setup()
 {
-    return 255
+    check_vnet_restart
 }
 
 do_local_demo_setup()
