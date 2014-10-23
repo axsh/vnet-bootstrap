@@ -13,6 +13,8 @@ and probably also any VMs and snapshots that depend on it"
 output-local-config()
 {
     cat <<EOF
+CODESOURCE=git
+
 STAGES="boot pregit install full"
 
 MEM_1=2000
