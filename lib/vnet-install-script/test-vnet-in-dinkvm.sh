@@ -1,5 +1,10 @@
 #!/bin/bash
 
+tmp=/home/centoslive/onhost/demo.config
+[ -f $tmp ] && source $tmp
+
+echo "$VMROLE",,,,,,,,,,vmvmvm
+
 SBUMLRESOURCES="/home/centoslive/onhost/sbuml-resources"
 
 reportfail()
@@ -1090,18 +1095,20 @@ reset_set_global_options()
 
 check_set_global_options()
 {
-    CODESOURCE="$(cat 2>/dev/null "$OPTS/gitorrpm")"
+    echo aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaazzzzzzzzzzzzzz
+    set -x
+    [ "$CODESOURCE" = "" ] && CODESOURCE="$(cat 2>/dev/null "$OPTS/gitorrpm")"
     case "$CODESOURCE" in
 	git | rpm) : ;;
 	*) CODESOURCE="" ;;
     esac
-    VMROLE="$(cat 2>/dev/null "$OPTS/vmrole")"
+    [ "$VMROLE" = "" ] && VMROLE="$(cat 2>/dev/null "$OPTS/vmrole")"
     case "$VMROLE" in
 	1 | 2 | 3 | r*) : ;;
 	*) VMROLE="" ;;
     esac
 
-    COMMIT="$(cat 2>/dev/null "$OPTS/commit")"
+    [ "$COMMIT" = "" ] && COMMIT="$(cat 2>/dev/null "$OPTS/commit")"
 
     [ "$CODESOURCE" != "" ] && [ "$VMROLE" != "" ] && return 0
     return 255

@@ -58,9 +58,9 @@ do-until-done()
 
 	echo $(( ++ccc )) >inprogress-$vmid
 	divider >>log$vmid
-	time ( cat "$config_path"  # allow the in-vm script to use config vars freely
-	       echo sudo bash onhost/lib/vnet-install-script/test-vnet-in-dinkvm.sh do "$@" ) \
-		   | ./lib/c-dinkvm/dinkvm -script - -mem "$mem"  $snapshot vm$vmid &
+	time ( echo "export VMROLE=$vmid"  # the -E on the next line lets this pass through sudo
+	       echo sudo -E bash onhost/lib/vnet-install-script/test-vnet-in-dinkvm.sh do "$@" ) \
+		 | ./lib/c-dinkvm/dinkvm -script - -mem "$mem"  $snapshot vm$vmid &
 	echo "$!" >pid$vmid
 	sleep 2
 	wait
@@ -88,7 +88,7 @@ for i in "$@"
 do
     case "$i" in
 	1 | 2 | 3 | r)
-	    eval time do-until-done $i "$low_level_step" &
+	    eval time do-until-done $i "$low_level_step"  >>log$i &
 	    ;;
 	*)
 	    echo "bad parameter: $1" 1>&2

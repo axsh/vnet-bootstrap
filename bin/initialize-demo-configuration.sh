@@ -28,6 +28,8 @@ EOF
 output-integration-test-config()
 {
     cat <<EOF
+CODESOURCE=git
+
 STAGES="boot misc install configure full"
 
 MEM_r=1400
