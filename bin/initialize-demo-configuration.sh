@@ -20,7 +20,7 @@ STAGES="boot pregit install full"
 MEM_1=2000
 boot_1=just_boot
 pregit_1=local_pregit
-intall_1=part_2_start_vms_services
+install_1=part_2_start_vms_services
 full_1=local_demo_setup
 EOF
 }
@@ -36,7 +36,7 @@ STAGES="boot pregit install configure full"
 MEM_r=1400
 boot_r=just_boot
 pregit_r=dev_git_yum_install
-intall_r=testspec_gems
+install_r=testspec_gems
 full_r=router_demo_setup
 EOF
     for i in 1 2 3; do
@@ -45,7 +45,7 @@ EOF
 MEM_$i=2000
 boot_$i=just_boot
 pregit_$i=vm123_pregit
-intall_$i=part_1_download_install_everything
+install_$i=part_1_download_install_everything
 full_$i=itests_env_setup
 EOF
     done
