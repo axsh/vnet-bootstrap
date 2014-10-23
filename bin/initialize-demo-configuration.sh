@@ -13,13 +13,12 @@ and probably also any VMs and snapshots that depend on it"
 output-local-config()
 {
     cat <<EOF
-STAGES="boot misc install configure full"
+STAGES="boot pregit install full"
 
 MEM_1=2000
-boot_1=boot
-misc_1=ttd
-intall_1=ttd
-configure_1=local_demo_setup
+boot_1=just_boot
+pregit_1=local_pregit
+intall_1=part_2_start_vms_services
 full_1=local_demo_setup
 EOF
 }
@@ -30,23 +29,21 @@ output-integration-test-config()
     cat <<EOF
 CODESOURCE=git
 
-STAGES="boot misc install configure full"
+STAGES="boot pregit install configure full"
 
 MEM_r=1400
-boot_r=boot
-misc_r=ttd
-intall_r=ttd
-configure_r=router_demo_setup
+boot_r=just_boot
+pregit_r=dev_git_yum_install
+intall_r=testspec_gems
 full_r=router_demo_setup
 EOF
     for i in 1 2 3; do
 	cat <<EOF
 
 MEM_$i=2000
-boot_$i=boot
-misc_$i=ttd
-intall_$i=ttd
-configure_$i=itests_env_setup
+boot_$i=just_boot
+pregit_$i=vm123_pregit
+intall_$i=part_1_download_install_everything
 full_$i=itests_env_setup
 EOF
     done

@@ -25,11 +25,116 @@ try()
 # router_demo_setup
 
 default_steps='
-  local_demo_setup
+  all_steps
 '
 
+######## fake step: just_boot
 
-######## part_1_download_install_everything
+# The purpose of this step is to give
+# a target that does nothing, so the
+# VM just boots.
+
+deps_just_boot='
+'
+
+check_just_boot()
+{
+    true
+}
+
+do_just_boot()
+{
+    true
+}
+
+######## fake step: all_steps
+
+# The purpose of this step is to give
+# one target that summarizes all the
+# tree/DAGs of steps in this file.
+
+deps_all_steps='
+  block
+  local_demo_setup
+  router_demo_setup
+  itests_env_setup
+'
+check_all_steps()
+{
+    false
+}
+
+do_all_steps()
+{
+    false
+}
+
+######## fake step: block
+
+# The purpose of this steps is so that it can
+# be added to other fake steps to block them
+# from trying to "do" their dependencies.
+
+deps_block='
+'
+check_block()
+{
+    false
+}
+
+do_block()
+{
+    false
+}
+
+######## summary step: local_pregit
+
+# define the pregit high-level stage for
+# the local_demo config
+
+deps_local_pregit='
+  dev_git_yum_install
+  add_local_test_taps_to_switch
+'
+
+# Note: not sure if add_itests_taps_to_switch can really be done
+# before installing openvnet from github
+
+check_local_pregit()
+{
+    [ -f /tmp/finished-local_pregit ]
+}
+
+do_local_pregit()
+{
+    touch /tmp/finished-local_pregit
+}
+
+######## summary step: vm123_pregit
+
+# define the pregit high-level stage for
+# the itests config
+
+deps_vm123_pregit='
+  dev_git_yum_install
+  add_itests_taps_to_switch
+  set_etc_wakame_vnet
+'
+
+# Note: not sure if add_itests_taps_to_switch can really be done
+# before installing openvnet from github
+
+check_vm123_pregit()
+{
+    [ -f /tmp/finished-vm123_pregit ]
+}
+
+do_vm123_pregit()
+{
+    touch /tmp/finished-vm123_pregit
+}
+
+######## summary step: part_1_download_install_everything
 
 deps_part_1_download_install_everything='
   vnet_gems
@@ -47,7 +152,7 @@ do_part_1_download_install_everything()
     touch /tmp/finished-part-1
 }
 
-######## part_2_start_vms_services
+######## summary step: part_2_start_vms_services
 
 deps_part_2_start_vms_services='
   start_sbuml_vms_for_local_test
@@ -68,7 +173,7 @@ do_part_2_start_vms_services()
     touch /tmp/finished-part-2
 }
 
-######## part_3_configure_switch
+######## summary step: part_3_configure_switch
 
 deps_part_3_configure_switch='
   add_local_test_taps_to_switch
@@ -119,7 +224,7 @@ do_verify_is_router()
 
 ######## testspec_install
 
-deps_testspec_install=''
+deps_testspec_install='dev_git_yum_install'
 
 check_testspec_install()
 {
