@@ -58,15 +58,14 @@ do-until-done()
 
 	echo $(( ++ccc )) >inprogress-$vmid
 	divider >>log$vmid
-	time ( echo "export VMROLE=$vmid"  # the -E on the next line lets this pass through sudo
-	       echo sudo -E bash onhost/lib/vnet-install-script/test-vnet-in-dinkvm.sh do "$@" ) \
-		 | ./lib/c-dinkvm/dinkvm -script - -mem "$mem"  $snapshot vm$vmid &
+	time ./lib/c-dinkvm/dinkvm -mem "$mem"  $snapshot vm$vmid ... sudo env VMROLE=$vmid bash  \
+	     onhost/lib/vnet-install-script/test-vnet-in-dinkvm.sh do "$@" &
 	echo "$!" >pid$vmid
 	sleep 2
 	wait
 	verfify-not-stopped
 	# (check1 does not need the config vars)
-	result="$(./lib/c-dinkvm/dinkvm -mem "$mem" vm$vmid ... sudo bash  \
+	result="$(./lib/c-dinkvm/dinkvm -mem "$mem" vm$vmid ... sudo env VMROLE=$vmid bash  \
 	    onhost/lib/vnet-install-script/test-vnet-in-dinkvm.sh check1 "$@" &
             )"
 	if [[ "$result" != *Not* ]]
