@@ -354,7 +354,9 @@ deps_local_demo_setup='
 
 check_local_demo_setup()
 {
-    check_vnet_restart
+    check_part_3_configure_switch && \
+	check_part_2_start_vms_services && \
+	check_part_1_download_install_everything
 }
 
 do_local_demo_setup()
