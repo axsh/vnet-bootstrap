@@ -128,7 +128,7 @@ closefds()
 export -f closefds
 
 exec 99>&1
-( echo "closefds" ;  prefixitin ' in: ' ) | bash 1> >(prefixitout 'out: ') 2> >(prefixiterr 'ERR: ')
+( echo "closefds" ;  prefixitin ' in: ' ) | bash 1> >(prefixitout 'out: ') 2> >(prefixiterr 'Stderr: ')
 EOF3
 
 /from-knoppix704/busybox chmod +x /sysroot/bin/simple-guest-bash-server.sh
