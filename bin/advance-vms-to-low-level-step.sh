@@ -79,7 +79,6 @@ do-until-done()
 	verfify-not-stopped
     done
 }
-set -x
 low_level_step="$1"
 shift
 

@@ -23,8 +23,6 @@ divider()
     echo
 }
 
-set -x
-
 for s in $STAGES; do
     high_level_stage="$s"
     [ "$high_level_stage" = "$1" ] && break

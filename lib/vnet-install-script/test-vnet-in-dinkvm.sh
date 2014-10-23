@@ -3,8 +3,6 @@
 tmp=/home/centoslive/onhost/demo.config
 [ -f $tmp ] && source $tmp
 
-echo "$VMROLE",,,,,,,,,,vmvmvm
-
 SBUMLRESOURCES="/home/centoslive/onhost/sbuml-resources"
 
 reportfail()
@@ -1095,8 +1093,6 @@ reset_set_global_options()
 
 check_set_global_options()
 {
-    echo aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaazzzzzzzzzzzzzz
-    set -x
     [ "$CODESOURCE" = "" ] && CODESOURCE="$(cat 2>/dev/null "$OPTS/gitorrpm")"
     case "$CODESOURCE" in
 	git | rpm) : ;;
