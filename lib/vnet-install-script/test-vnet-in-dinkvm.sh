@@ -1225,7 +1225,7 @@ check_cmd()
     if [ "$dotout" != "" ]; then
 	if [ "$dotlevel" = "" ]; then
 	    exec 44>"$dotout"
-	    echo "digraph { " >&44
+	    echo "strict digraph { " >&44
 	    dotlevel=1
 	else
 	    dotlevel=$(( dotlevel + 1 ))
