@@ -1313,7 +1313,8 @@ check1_cmd()
     try cd "$abspath"
     local stepname="$1"
     local indent="$2"
-    echo -n "$indent$stepname   "
+
+    printf "*%-10s %s" "${indent//  --  /*}" "$indent$stepname"
     if "check_$stepname"
     then
 	echo "Done (maybe)"
@@ -1348,6 +1349,10 @@ check_cmd()
 	[[ "$tmp" == *,,* ]] && return
 	already_checked="$already_checked ,$stepname, "
     fi
+
+    # uncomment to have the step source inserted in output
+    # eval type "do_${stepname}"
+
     local deps
     eval 'deps=$deps_'"$stepname"
     for depstep in $deps
