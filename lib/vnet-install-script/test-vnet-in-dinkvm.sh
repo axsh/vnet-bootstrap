@@ -1106,6 +1106,9 @@ check_set_global_options()
 
     [ "$COMMIT" = "" ] && COMMIT="$(cat 2>/dev/null "$OPTS/commit")"
 
+    # Default to these values (mainly when using vm*/vnetscript-shortcut.sh)
+    echo "$CODESOURCE" >"$OPTS/gitorrpm"
+    echo "$VMROLE" >"$OPTS/vmrole"
     [ "$CODESOURCE" != "" ] && [ "$VMROLE" != "" ] && return 0
     return 255
 }
