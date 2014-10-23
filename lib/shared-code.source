@@ -53,6 +53,12 @@ do
     [ -d "$d" ] || cp -al "$R/$d" "$d"
 done
 
+# and file(s)
+for f in demo.config
+do
+    [ -f demo.config ] || cp "$R/$f" "$f"
+done
+
 if ! [ -f mcast-address.txt ]
 then
     # generate x, y, & z in 230.x.y.z to make a likely unique multicast address

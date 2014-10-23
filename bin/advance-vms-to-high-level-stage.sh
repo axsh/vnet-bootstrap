@@ -1,15 +1,13 @@
 #!/bin/bash
 
-reportfail()
-{
-    echo "Failed...exiting. ($*)" 1>&2
-    exit 255
-}
+export SCRIPT_DIR="$(cd "$(dirname "$(readlink -f "$0")")" && pwd -P)" || exit
+source "$SCRIPT_DIR/../lib/processgroup-error-handler.source"
+
+# TODO, do a pull from local git clones here??
+source "$SCRIPT_DIR/../lib/shared-code.source"
 
 [ -d ./lib/vnet-install-script ] || reportfail "expect to be run from grandparent dir of .../vnet-install-script/"
 [ -d ./lib/c-dinkvm ] || reportfail "expect to be run from grandparent dir of .../c-dinkvm/"
-
-source ./lib/processgroup-error-handler.source
 
 config_path="$SCRIPT_DIR/../demo.config"
 [ -f "$config_path" ] || reportfail "demo.config file must be created with ./bin/initialize-demo-configuration"
