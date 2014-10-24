@@ -55,10 +55,13 @@ do_just_boot()
 
 deps_all_steps='
   block
+  local_pregit
   local_demo_setup
   router_demo_setup
+  vm123_pregit
   itests_env_setup
 '
+
 check_all_steps()
 {
     false
