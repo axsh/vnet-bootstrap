@@ -616,12 +616,12 @@ do_populate_database_for_local_test()
 	set -x
 	## a long sleep before first one seems to be necessary
 	sleep 10
-	./vnctl networks add --uuid nw-vnet1 --display-name vnet1 --ipv4-network 10.0.0.0 --ipv4-prefix 24 --network-mode virtual
+	./vnctl networks add --uuid nw-vnet1 --display-name vnet1 --ipv4-network 10.1.1.0 --ipv4-prefix 24 --network-mode virtual
 	set-mydpid
 	./vnctl datapaths add --uuid dp-vna --display-name vna-datapath --node-id vna --dpid "0x$MYDPID"
 
-	./vnctl interfaces add --uuid if-tap0 --mac-address 00:18:51:e5:33:66 --network-uuid nw-vnet1 --ipv4-address 10.1.1.1
-	./vnctl interfaces add --uuid if-tap1 --mac-address 00:18:51:e5:33:67 --network-uuid nw-vnet1 --ipv4-address 10.1.1.2
+	./vnctl interfaces add --uuid if-tap0 --mac-address 00:18:51:e5:33:66 --network-uuid nw-vnet1 --ipv4-address 10.1.1.1 --owner_datapath_uuid dp-vna --port_name if-tap0
+	./vnctl interfaces add --uuid if-tap1 --mac-address 00:18:51:e5:33:67 --network-uuid nw-vnet1 --ipv4-address 10.1.1.2 --owner_datapath_uuid dp-vna --port_name if-tap1
 
 	curl -s -X POST --data-urlencode uuid=if-dp1eth0 --data-urlencode mode=host --data-urlencode port_name=eth0 --data-urlencode mac_address=02:01:00:00:00:01 --data-urlencode owner_datapath_uuid=dp-vna --data-urlencode ipv4_address=172.16.90.10 --data-urlencode network_uuid=nw-vnet1 http://localhost:9090/api/interfaces
 
