@@ -1345,6 +1345,7 @@ dinkvm()
 	    thepid="${ln//[^0-9]/}" # remove non-digits
 	    thevmdir="$(readlink /proc/"$thepid"/fd/2)"
 	    thevmdir="${thevmdir%/*}"
+	    [ -f $thevmdir/vncHPORT ] || continue
 	    printf "pid=%6d vncport=%6d sshport=%6d %s\n" \
 		    $thepid "$(< "$thevmdir/vncHPORT")" "$(< "$thevmdir/sshHPORT")" "$thevmdir"
 	    if [ "$2" = '-rm' ] && [ -d "$thevmdir" ]
