@@ -327,7 +327,9 @@ do_router_demo_setup()
     # Use StrictHostKeyChecking for connecting to newly created guest VMs
     sed -i 's/#{config\[:ssh_user]}/-o StrictHostKeyChecking=no #{config[:ssh_user]}/' /opt/axsh/openvnet-testspec/lib/vnspec/vm.rb
 
-    service network stop
+    # Why was this ever in here? Commenting out now because it stopped local pings
+    # and probably caused other problems.
+    # service network stop
 
     service NetworkManager stop
     killall dhclient
