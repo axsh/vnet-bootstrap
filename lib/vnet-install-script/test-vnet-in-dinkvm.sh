@@ -268,6 +268,7 @@ do_testspec_install()
 		    echo "    port_name: eth3"
 		    break
 		fi
+		echo "$ln"
 	    done
 	    cat # rest unchanged
 	} </tmp/base.yml >/opt/axsh/openvnet-testspec/dataset/base.yml
