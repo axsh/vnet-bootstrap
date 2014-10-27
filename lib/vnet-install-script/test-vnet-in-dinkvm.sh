@@ -264,8 +264,10 @@ do_testspec_install()
 	    while IFS= read -r ln ; do
                 # hopefully will change "port_name: eth0" to "port_name: eth3"
 		# just for if-dp3eth0
-		echo "${ln/eth0/eth3}"
-		[[ "$ln" == *eth0* ]] && break
+		if [[ "$ln" == *port_name* ]]; then
+		    echo "    port_name: eth3"
+		    break
+		fi
 	    done
 	    cat # rest unchanged
 	} </tmp/base.yml >/opt/axsh/openvnet-testspec/dataset/base.yml
