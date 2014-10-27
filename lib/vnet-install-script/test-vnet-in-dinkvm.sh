@@ -1317,7 +1317,7 @@ check1_cmd()
     local stepname="$1"
     local indent="$2"
 
-    printf "*%-10s %s" "${indent//  --  /*}" "$indent$stepname"
+    printf "*%-10s %s   " "${indent//  --  /*}" "$indent$stepname"
     if "check_$stepname"
     then
 	echo "Done (maybe)"
