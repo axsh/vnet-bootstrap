@@ -56,6 +56,7 @@ bootdirname="boot-64-centos"
 #  I have already downloaded the iso)
 if isofile="$(search-up-path "$fname" "$SCRIPT_DIR/../lib/c-dinkvm")" || \
     isofile="$(search-up-path "$fname" "/home/potter/isos")" || \
+    isofile="$(search-up-path "$fname" "/home/triggers/isos")" || \
     isofile="$(search-up-path "$fname" ~/isos)"
 then
     if ! checkok "$isofile"
