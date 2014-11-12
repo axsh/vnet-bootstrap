@@ -35,8 +35,13 @@ will start a one-machine OpenVNet demo.)
 Start out by installing to vm1 only.  In theory, this step should not
 be necessary, however, the VMs share the same cache directories and
 clobber each other the first pass through, so let one machine get
-everything in order.  The scripts should be changed to use locks and
-be more careful.  Anyway, one VM should work OK and take about 10 minutes.
+everything in order.  (TODO: The scripts should be changed to use locks and
+be more careful.)  Anyway, one VM should work OK and take about 10 minutes.
+
+Warning: You really must wait until vm1 is finished.  You can check
+progress (or problems) with "tail -f log1".
+"./vm1/vnetscript-shortcut.sh itests_env_setup" gives another useful
+view of progress.
 
 
 ## Bootstraping and running a test:
