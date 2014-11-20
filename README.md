@@ -1,5 +1,5 @@
-vnet-from-scratch
-=================
+vnet-bootstrap
+==============
 
 Note: depends on a web server running on 2.24, so for now the
 following will not work outside of the office.
